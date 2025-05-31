@@ -198,9 +198,8 @@ export default function LandingPage() {
           <div className="space-y-4 mb-16">
             <Link href="/register" className="block group">
               <Button
-                variant="playful"
                 size="lg"
-                className="w-full group-hover:scale-105 transition-transform duration-200 shadow-2xl bg-white text-primary-purple hover:bg-gray-50"
+                className="w-full py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group-hover:scale-105 bg-white text-primary-purple hover:bg-gray-50 font-fredoka font-bold text-lg"
               >
                 <span className="mr-2">🚀</span>
                 Inizia gratis ora
@@ -210,7 +209,7 @@ export default function LandingPage() {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full group-hover:scale-105 transition-transform duration-200 border-white text-white hover:bg-white hover:text-primary-purple"
+                className="w-full py-4 rounded-2xl border-2 border-white text-white hover:bg-white hover:text-primary-purple transition-all duration-200 group-hover:scale-105 font-fredoka font-bold text-lg"
               >
                 Ho già un account
               </Button>
