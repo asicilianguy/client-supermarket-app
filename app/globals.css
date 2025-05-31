@@ -1,0 +1,388 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221 89% 25%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 355 98% 44%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 89% 25%;
+
+    /* SpesaViva modern playful colors */
+    --primary-orange: #ff6b35;
+    --primary-purple: #6c5ce7;
+    --primary-green: #00b894;
+    --primary-pink: #fd79a8;
+    --primary-blue: #74b9ff;
+    --primary-yellow: #fdcb6e;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 355 98% 44%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom font classes */
+.font-fredoka {
+  font-family: "Fredoka", sans-serif;
+}
+
+.font-nunito {
+  font-family: "Nunito", sans-serif;
+}
+
+/* Custom color utilities */
+.text-primary-orange {
+  color: var(--primary-orange);
+}
+
+.text-primary-purple {
+  color: var(--primary-purple);
+}
+
+.text-primary-green {
+  color: var(--primary-green);
+}
+
+.text-primary-pink {
+  color: var(--primary-pink);
+}
+
+.text-primary-blue {
+  color: var(--primary-blue);
+}
+
+.text-primary-yellow {
+  color: var(--primary-yellow);
+}
+
+.bg-primary-orange {
+  background-color: var(--primary-orange);
+}
+
+.bg-primary-purple {
+  background-color: var(--primary-purple);
+}
+
+.bg-primary-green {
+  background-color: var(--primary-green);
+}
+
+.bg-primary-pink {
+  background-color: var(--primary-pink);
+}
+
+.bg-primary-blue {
+  background-color: var(--primary-blue);
+}
+
+.bg-primary-yellow {
+  background-color: var(--primary-yellow);
+}
+
+/* Prevent horizontal overflow */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Gentle animations */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bounce-gentle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-2deg);
+  }
+  75% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes infinite-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-100% / 3));
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 1s ease-in-out;
+}
+
+.animate-infinite-scroll {
+  animation: infinite-scroll 25s linear infinite;
+  width: calc(300% + 96px);
+}
+
+/* Delay classes */
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-600 {
+  animation-delay: 0.6s;
+}
+
+.delay-800 {
+  animation-delay: 0.8s;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced hover effects */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient backgrounds */
+.bg-gradient-playful {
+  background: linear-gradient(135deg, #ff6b35, #fd79a8, #6c5ce7, #74b9ff);
+  background-size: 400% 400%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.bg-gradient-soft {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Performance optimizations */
+.will-change-transform {
+  will-change: transform;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .animate-infinite-scroll {
+    animation-duration: 20s;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .animate-infinite-scroll {
+    animation: none;
+  }
+
+  .animate-slide-up {
+    animation: fade-in 0.3s ease-out forwards;
+  }
+
+  .animate-bounce-gentle {
+    animation: none;
+  }
+
+  * {
+    transition-duration: 0.1s !important;
+    animation-duration: 0.1s !important;
+  }
+}
+
+/* Custom Scrollbar Styling - GLOBAL */
+/* Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px; /* Per scrollbar orizzontali */
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #ff6b35, #fd79a8);
+  border-radius: 10px;
+  border: 2px solid #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #fd79a8, #6c5ce7);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ff6b35 #f1f5f9;
+}
+
+/* Mantieni anche lo stile specifico per il container dei supermercati */
+.supermarket-grid-container {
+  overflow: visible; /* Allow overflow for scaled elements */
+  width: 100%;
+  position: relative;
+}
+
+.supermarket-grid-container .grid {
+  width: 100%;
+  box-sizing: border-box;
+  /* Add padding to accommodate scaled elements */
+  padding: 0.5rem;
+  margin: -0.5rem;
+}
+
+/* Enhanced grid responsiveness */
+@media (max-width: 640px) {
+  .supermarket-grid-container .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* Ensure cards fit properly and handle scaling */
+.supermarket-grid-container .grid > div {
+  min-width: 0;
+  width: 100%;
+  position: relative;
+  /* Ensure scaled elements don't interfere with layout */
+  transform-origin: center;
+}
+
+/* Z-index management for scaled cards */
+.supermarket-grid-container .grid > div:hover,
+.supermarket-grid-container .grid > div.z-10 {
+  z-index: 10;
+  position: relative;
+}
+
+/* Horizontal scrollbar styling for offer cards */
+.horizontal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #ff6b35 #f1f5f9;
+  padding-bottom: 12px; /* Space for the scrollbar */
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #ff6b35, #fd79a8);
+  border-radius: 10px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #fd79a8, #6c5ce7);
+}
