@@ -209,7 +209,7 @@ export default function LandingPage() {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full py-4 rounded-2xl border-2 border-white text-white hover:bg-white hover:text-primary-purple transition-all duration-200 group-hover:scale-105 font-fredoka font-bold text-lg"
+                className="w-full py-4 rounded-2xl border-2 border-white text-white hover:bg-white hover:text-primary-purple transition-all duration-200 group-hover:scale-105 font-fredoka font-bold text-lg bg-white/20 backdrop-blur-sm"
               >
                 Ho già un account
               </Button>
