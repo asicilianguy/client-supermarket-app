@@ -3,34 +3,80 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, User, Store, Check } from "lucide-react"
-import Link from "next/link"
+import { EnhancedCard, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { User, Store, Phone, Edit, Check, X, LogOut } from "lucide-react"
+import { BottomNavbar } from "@/components/bottom-navbar"
 import { useToast } from "@/hooks/use-toast"
-
-const SUPERMARKETS = [
-  { id: "esselunga", name: "Esselunga", colors: ["#0b3a74", "#e10314"] },
-  { id: "conad", name: "Conad", colors: ["#e30f15", "#0e643c"] },
-  { id: "lidl", name: "Lidl", colors: ["#fff001", "#0850a8"] },
-  { id: "eurospin", name: "Eurospin", colors: ["#2b4e9c", "#eac62c"] },
-  { id: "bennet", name: "Bennet", colors: ["#fc0b07", "#1c1c1c"] },
-  { id: "carrefourexpress", name: "Carrefour Express", colors: ["#2b8645", "#64a777"] },
-  { id: "carrefourmarket", name: "Carrefour Market", colors: ["#fb0509", "#f64645"] },
-  { id: "centesimo", name: "Centesimo", colors: ["#caaf0c", "#2a2627"] },
-  { id: "crai", name: "Crai", colors: ["#ef4123", "#81b39d"] },
-  { id: "gigante", name: "Gigante", colors: ["#0f2253", "#df050f"] },
-  { id: "ins", name: "INS", colors: ["#fcf00d", "#124393"] },
-  { id: "md", name: "MD", colors: ["#f9ea20", "#1b5fa5"] },
-  { id: "todis", name: "Todis", colors: ["#035e42", "#ea5d11"] },
-  { id: "paghipoco", name: "Paghi Poco", colors: ["#e00c14", "#fee80d"] },
-  { id: "prestofresco", name: "Presto Fresco", colors: ["#e30f15", "#fcea04"] },
-]
+import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 interface UserProfile {
   name: string
   phoneNumber: string
   frequentedSupermarkets: string[]
 }
+
+const SUPERMARKETS = [
+  { id: "esselunga", name: "Esselunga", colors: ["#0b3a74", "#e10314"], logo: "/supermarkets/esselunga.png" },
+  {
+    id: "conad",
+    name: "Conad",
+    colors: ["#e30f15", "#0e643c"],
+    logo: "/placeholder.svg?height=40&width=80&text=Conad",
+  },
+  { id: "lidl", name: "Lidl", colors: ["#fff001", "#0850a8"], logo: "/supermarkets/lidl.png" },
+  { id: "eurospin", name: "Eurospin", colors: ["#2b4e9c", "#eac62c"], logo: "/supermarkets/eurospin.png" },
+  { id: "bennet", name: "Bennet", colors: ["#fc0b07", "#1c1c1c"], logo: "/supermarkets/bennet.png" },
+  {
+    id: "auchan",
+    name: "Auchan",
+    colors: ["#e30f15", "#0e643c"],
+    logo: "/placeholder.svg?height=40&width=80&text=Auchan",
+  },
+  { id: "penny", name: "Penny Market", colors: ["#e30f15", "#0e643c"], logo: "/supermarkets/penny.png" },
+  {
+    id: "despar",
+    name: "Despar",
+    colors: ["#e30f15", "#0e643c"],
+    logo: "/placeholder.svg?height=40&width=80&text=Despar",
+  },
+  { id: "centesimo", name: "Il Centesimo", colors: ["#caaf0c", "#2a2627"], logo: "/supermarkets/centesimo.png" },
+  {
+    id: "carrefouriper",
+    name: "Carrefour Iper",
+    colors: ["#fb0509", "#f64645"],
+    logo: "/supermarkets/carrefouriper.png",
+  },
+  {
+    id: "carrefourexpress",
+    name: "Carrefour Express",
+    colors: ["#2b8645", "#64a777"],
+    logo: "/supermarkets/carrefourexpress.png",
+  },
+  {
+    id: "prestofresco",
+    name: "Presto Fresco",
+    colors: ["#e30f15", "#fcea04"],
+    logo: "/placeholder.svg?height=40&width=80&text=Presto",
+  },
+  {
+    id: "carrefourmarket",
+    name: "Carrefour Market",
+    colors: ["#fb0509", "#f64645"],
+    logo: "/supermarkets/carrefourmarket.png",
+  },
+  { id: "gigante", name: "Il Gigante", colors: ["#0f2253", "#df050f"], logo: "/supermarkets/gigante.png" },
+  { id: "ins", name: "iN's Mercato", colors: ["#fcf00d", "#124393"], logo: "/supermarkets/ins.png" },
+  { id: "todis", name: "Todis", colors: ["#035e42", "#ea5d11"], logo: "/supermarkets/todis.png" },
+  { id: "md", name: "MD", colors: ["#f9ea20", "#1b5fa5"], logo: "/supermarkets/md.png" },
+  { id: "crai", name: "CRAI", colors: ["#ef4123", "#81b39d"], logo: "/supermarkets/crai.jpeg" },
+  {
+    id: "paghipoco",
+    name: "Paghi Poco",
+    colors: ["#e00c14", "#fee80d"],
+    logo: "/placeholder.svg?height=40&width=80&text=Paghi+Poco",
+  },
+]
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -40,6 +86,7 @@ export default function ProfilePage() {
   const [selectedSupermarkets, setSelectedSupermarkets] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
     fetchProfile()
@@ -178,181 +225,265 @@ export default function ProfilePage() {
     setSelectedSupermarkets((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]))
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    router.push("/login")
+    toast({
+      title: "Disconnesso",
+      description: "Hai effettuato il logout con successo",
+    })
+  }
+
   if (!profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Caricamento...</p>
+        <div className="w-12 h-12 border-4 border-primary-purple border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <header className="bg-white shadow-sm px-4 py-4">
-        <div className="max-w-md mx-auto flex items-center">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="mr-3">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
-          <h1 className="text-lg font-semibold text-gray-900">Profilo</h1>
+      <header className="bg-white shadow-sm px-4 py-4 sticky top-0 z-30">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <h1 className="text-xl font-fredoka font-bold text-gray-900 flex items-center">
+            <span className="bg-gradient-to-r from-primary-purple to-primary-pink text-transparent bg-clip-text">
+              Il Tuo Profilo
+            </span>
+            <User className="w-5 h-5 ml-2 text-primary-purple" />
+          </h1>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+          >
+            <LogOut className="w-4 h-4 mr-1" />
+            Esci
+          </Button>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+        {/* Profile Info */}
+        <div className="animate-fade-in">
+          <EnhancedCard className="overflow-hidden border-0 bg-gradient-to-br from-primary-purple/10 to-primary-pink/10">
+            <div className="p-6 flex items-center">
+              {/* Avatar Circle */}
+              <div className="w-20 h-20 rounded-full bg-gradient-to-r from-primary-purple to-primary-pink flex items-center justify-center mr-4 shadow-lg">
+                <span className="text-2xl font-bold text-white">{profile.name.charAt(0).toUpperCase()}</span>
+              </div>
+
+              {/* User Info */}
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold text-gray-900">{profile.name}</h2>
+                <p className="text-sm text-gray-600 flex items-center">
+                  <Phone className="w-3 h-3 mr-1" />
+                  {profile.phoneNumber}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {profile.frequentedSupermarkets.length} supermercati selezionati
+                </p>
+              </div>
+            </div>
+          </EnhancedCard>
+        </div>
+
         {/* Name Section */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <User className="w-5 h-5 mr-2" />
-              Nome
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {editingName ? (
-              <div className="space-y-3">
-                <Input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Il tuo nome"
-                  className="border-gray-200"
-                />
-                <div className="flex space-x-2">
+        <div className="animate-fade-in">
+          <EnhancedCard variant="elevated">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg">
+                <User className="w-5 h-5 mr-2" />
+                Nome
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {editingName ? (
+                <div className="space-y-3">
+                  <Input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Il tuo nome"
+                    className="border-2 border-gray-200 focus:border-primary-purple rounded-xl h-12"
+                    autoFocus
+                  />
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={updateName}
+                      disabled={!newName.trim() || loading}
+                      className="flex-1 bg-gradient-to-r from-primary-purple to-primary-pink text-white"
+                    >
+                      {loading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      ) : (
+                        <Check className="w-4 h-4 mr-2" />
+                      )}
+                      Salva
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingName(false)
+                        setNewName(profile.name)
+                      }}
+                      className="flex-1"
+                      disabled={loading}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Annulla
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-900">{profile.name}</span>
                   <Button
-                    onClick={updateName}
-                    disabled={!newName.trim() || loading}
-                    className="flex-1 bg-gradient-to-r from-green-600 to-blue-600"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingName(true)}
+                    className="text-primary-purple hover:bg-primary-purple/10"
                   >
-                    {loading ? "Salvataggio..." : "Salva"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setEditingName(false)
-                      setNewName(profile.name)
-                    }}
-                    className="flex-1"
-                  >
-                    Annulla
+                    <Edit className="w-4 h-4 mr-1" />
+                    Modifica
                   </Button>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-900">{profile.name}</span>
-                <Button variant="outline" size="sm" onClick={() => setEditingName(true)}>
-                  Modifica
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </EnhancedCard>
+        </div>
 
         {/* Phone Number (Read Only) */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <User className="w-5 h-5 mr-2" />
-              Numero di Telefono
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <span className="text-gray-900">{profile.phoneNumber}</span>
-          </CardContent>
-        </Card>
+        <div className="animate-fade-in">
+          <EnhancedCard variant="elevated">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg">
+                <Phone className="w-5 h-5 mr-2" />
+                Numero di Telefono
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <span className="text-gray-900">{profile.phoneNumber}</span>
+              </div>
+            </CardContent>
+          </EnhancedCard>
+        </div>
 
         {/* Supermarkets Section */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Store className="w-5 h-5 mr-2" />
-              Supermercati Frequentati
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {editingSupermarkets ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {SUPERMARKETS.map((supermarket) => (
-                    <Card
-                      key={supermarket.id}
-                      className={`cursor-pointer transition-all duration-200 border-2 ${
-                        selectedSupermarkets.includes(supermarket.id)
-                          ? "border-green-500 shadow-md"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                      onClick={() => toggleSupermarket(supermarket.id)}
-                    >
-                      <CardContent className="p-3">
-                        <div
-                          className="w-full h-12 rounded-lg mb-2 flex items-center justify-center relative"
-                          style={{
-                            background: `linear-gradient(135deg, ${supermarket.colors[0]}, ${supermarket.colors[1]})`,
-                          }}
-                        >
-                          <span className="text-white font-bold text-xs text-center px-1">{supermarket.name}</span>
+        <div className="animate-fade-in">
+          <EnhancedCard variant="elevated">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg">
+                <Store className="w-5 h-5 mr-2" />
+                Supermercati Frequentati
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {editingSupermarkets ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    {SUPERMARKETS.map((supermarket) => (
+                      <div
+                        key={supermarket.id}
+                        className={`cursor-pointer transition-all duration-200 border-2 rounded-xl overflow-hidden relative ${
+                          selectedSupermarkets.includes(supermarket.id)
+                            ? "border-primary-purple shadow-md"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => toggleSupermarket(supermarket.id)}
+                      >
+                        <div className="p-3">
+                          <div className="w-full h-12 relative mb-2 rounded-lg overflow-hidden">
+                            <Image
+                              src={supermarket.logo || "/placeholder.svg"}
+                              alt={supermarket.name}
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-700 text-center font-medium">{supermarket.name}</p>
+
                           {selectedSupermarkets.includes(supermarket.id) && (
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-primary-purple rounded-full flex items-center justify-center">
                               <Check className="w-3 h-3 text-white" />
                             </div>
                           )}
                         </div>
-                        <p className="text-xs text-gray-700 text-center font-medium">{supermarket.name}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={updateSupermarkets}
-                    disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-green-600 to-blue-600"
-                  >
-                    {loading ? "Salvataggio..." : "Salva"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setEditingSupermarkets(false)
-                      setSelectedSupermarkets(profile.frequentedSupermarkets)
-                    }}
-                    className="flex-1"
-                  >
-                    Annulla
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  {profile.frequentedSupermarkets.map((id) => {
-                    const supermarket = SUPERMARKETS.find((s) => s.id === id)
-                    if (!supermarket) return null
-
-                    return (
-                      <div
-                        key={id}
-                        className="p-2 rounded-lg text-center"
-                        style={{
-                          background: `linear-gradient(135deg, ${supermarket.colors[0]}20, ${supermarket.colors[1]}20)`,
-                        }}
-                      >
-                        <span className="text-sm font-medium text-gray-900">{supermarket.name}</span>
                       </div>
-                    )
-                  })}
-                </div>
+                    ))}
+                  </div>
 
-                <Button variant="outline" onClick={() => setEditingSupermarkets(true)} className="w-full">
-                  Modifica Supermercati
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={updateSupermarkets}
+                      disabled={selectedSupermarkets.length === 0 || loading}
+                      className="flex-1 bg-gradient-to-r from-primary-purple to-primary-pink text-white"
+                    >
+                      {loading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      ) : (
+                        <Check className="w-4 h-4 mr-2" />
+                      )}
+                      Salva
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingSupermarkets(false)
+                        setSelectedSupermarkets(profile.frequentedSupermarkets)
+                      }}
+                      className="flex-1"
+                      disabled={loading}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Annulla
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    {profile.frequentedSupermarkets.map((id) => {
+                      const supermarket = SUPERMARKETS.find((s) => s.id === id)
+                      if (!supermarket) return null
+
+                      return (
+                        <div key={id} className="relative rounded-lg overflow-hidden h-10 border border-gray-200">
+                          <div className="absolute inset-0">
+                            <Image
+                              src={supermarket.logo || "/placeholder.svg"}
+                              alt={supermarket.name}
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <Button variant="outline" onClick={() => setEditingSupermarkets(true)} className="w-full">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Modifica Supermercati
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </EnhancedCard>
+        </div>
+
+        {/* App Version */}
+        <div className="text-center text-xs text-gray-400 pt-4">
+          <p>SpesaViva v1.0.0</p>
+          <p className="mt-1">© 2025 SpesaViva. La spesa che prende vita. 💫</p>
+        </div>
       </div>
+
+      {/* Bottom Navigation */}
+      <BottomNavbar />
     </div>
   )
 }

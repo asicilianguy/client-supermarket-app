@@ -1,12 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { CardContent, EnhancedCard } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Plus } from "lucide-react"
-import Link from "next/link"
-import { useToast } from "@/hooks/use-toast"
+import { Plus, Search, FilterX } from "lucide-react"
+import { BottomNavbar } from "@/components/bottom-navbar"
+import Image from "next/image"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/components/ui/use-toast"
+
+interface Offer {
+  _id: string
+  productName: string
+  offerPrice: number
+  previousPrice?: number
+  discountPercentage?: number
+  chainName: string
+  brand?: string
+  supermarketAisle: string[]
+}
 
 const CATEGORIES = [
   { id: "frutta e verdura", name: "🍎 Frutta e Verdura", emoji: "🍎" },
@@ -40,44 +53,167 @@ const SUPERMARKET_COLORS: Record<string, string[]> = {
   prestofresco: ["#e30f15", "#fcea04"],
 }
 
-interface Offer {
-  _id: string
-  productName: string
-  offerPrice: number
-  previousPrice?: number
-  discountPercentage?: number
-  chainName: string
-  brand?: string
-  supermarketAisle: string[]
+const SUPERMARKET_LOGOS: Record<string, string> = {
+  todis: "/supermarkets/todis.png",
+  bennet: "/supermarkets/bennet.png",
+  carrefourexpress: "/supermarkets/carrefourexpress.png",
+  carrefourmarket: "/supermarkets/carrefourmarket.png",
+  carrefouriper: "/supermarkets/carrefouriper.png",
+  centesimo: "/supermarkets/centesimo.png",
+  crai: "/supermarkets/crai.jpeg",
+  esselunga: "/supermarkets/esselunga.png",
+  eurospin: "/supermarkets/eurospin.png",
+  gigante: "/supermarkets/gigante.png",
+  ins: "/supermarkets/ins.png",
+  lidl: "/supermarkets/lidl.png",
+  md: "/supermarkets/md.png",
+  paghipoco: "/placeholder.svg?height=40&width=80&text=Paghi+Poco",
+  prestofresco: "/placeholder.svg?height=40&width=80&text=Presto",
+  conad: "/placeholder.svg?height=40&width=80&text=Conad",
+  auchan: "/placeholder.svg?height=40&width=80&text=Auchan",
+  penny: "/supermarkets/penny.png",
+  despar: "/placeholder.svg?height=40&width=80&text=Despar",
 }
 
+const VALID_SUPERMARKETS = [
+  { id: "esselunga", name: "Esselunga" },
+  { id: "conad", name: "Conad" },
+  { id: "lidl", name: "Lidl" },
+  { id: "eurospin", name: "Eurospin" },
+  { id: "bennet", name: "Bennet" },
+  { id: "auchan", name: "Auchan" },
+  { id: "penny", name: "Penny Market" },
+  { id: "despar", name: "Despar" },
+  { id: "centesimo", name: "Il Centesimo" },
+  { id: "carrefouriper", name: "Carrefour Iper" },
+  { id: "carrefourexpress", name: "Carrefour Express" },
+  { id: "prestofresco", name: "Presto Fresco" },
+  { id: "carrefourmarket", name: "Carrefour Market" },
+  { id: "gigante", name: "Il Gigante" },
+  { id: "ins", name: "iN's Mercato" },
+  { id: "todis", name: "Todis" },
+  { id: "md", name: "MD" },
+  { id: "crai", name: "CRAI" },
+  { id: "paghipoco", name: "Paghi Poco" },
+]
+
+const VALID_AISLES = [
+  { id: "frutta e verdura", name: "Frutta e verdura" },
+  { id: "carne", name: "Carne" },
+  { id: "pesce", name: "Pesce" },
+  { id: "salumi", name: "Salumi" },
+  { id: "formaggi", name: "Formaggi" },
+  { id: "pane e prodotti da forno", name: "Pane e prodotti da forno" },
+  { id: "pasta", name: "Pasta" },
+  { id: "riso", name: "Riso" },
+  { id: "legumi", name: "Legumi" },
+  { id: "olio e condimenti", name: "Olio e condimenti" },
+  { id: "uova", name: "Uova" },
+  { id: "latticini", name: "Latticini" },
+  { id: "bevande", name: "Bevande" },
+  { id: "vino", name: "Vino" },
+  { id: "birra", name: "Birra" },
+  { id: "acqua", name: "Acqua" },
+  { id: "caffè", name: "Caffè" },
+  { id: "bio", name: "Bio" },
+  { id: "senza glutine", name: "Senza glutine" },
+  { id: "estate", name: "Estate" },
+  { id: "autunno", name: "Autunno" },
+  { id: "per bambini", name: "Per bambini" },
+  { id: "fitness", name: "Fitness" },
+]
+
 export default function ExplorePage() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedSupermarket, setSelectedSupermarket] = useState<string>("all")
+  const [selectedAisle, setSelectedAisle] = useState<string>("all")
+  const [selectedBrand, setSelectedBrand] = useState<string>("all")
+  const [availableBrands, setAvailableBrands] = useState<string[]>([])
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(false)
   const [addingProducts, setAddingProducts] = useState<Set<string>>(new Set())
+  const [userSupermarkets, setUserSupermarkets] = useState<string[]>([])
   const { toast } = useToast()
 
-  const fetchOffersByCategory = async (category: string) => {
-    setLoading(true)
+  // Filter supermarkets to show only those the user has selected
+  const filteredSupermarkets = useMemo(() => {
+    if (userSupermarkets.length === 0) return VALID_SUPERMARKETS
+    return VALID_SUPERMARKETS.filter((market) => userSupermarkets.includes(market.id))
+  }, [userSupermarkets])
+
+  useEffect(() => {
+    fetchUserProfile()
+  }, [])
+
+  useEffect(() => {
+    if (selectedSupermarket !== "all" || selectedAisle !== "all") {
+      fetchOffers()
+    }
+  }, [selectedSupermarket, selectedAisle])
+
+  useEffect(() => {
+    // Reset brand selection when supermarket or aisle changes
+    if (selectedBrand !== "all") {
+      setSelectedBrand("all")
+    }
+  }, [selectedSupermarket, selectedAisle])
+
+  const fetchUserProfile = async () => {
     try {
-      const response = await fetch(
-        `https://server-supermarket-app.onrender.com/api/offers/aisle/${encodeURIComponent(category)}`,
-      )
+      const token = localStorage.getItem("token")
+      const response = await fetch("https://server-supermarket-app.onrender.com/api/users/profile", {
+        headers: {
+          "x-auth-token": token || "",
+        },
+      })
+
       if (response.ok) {
         const data = await response.json()
-        setOffers(data.offers || [])
-        if (data.offers?.length === 0) {
-          toast({
-            title: "Nessuna offerta trovata",
-            description: "Non ci sono offerte disponibili per questa categoria",
-          })
-        }
+        setUserSupermarkets(data.frequentedSupermarkets || [])
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error)
+    }
+  }
+
+  const fetchOffers = async () => {
+    setLoading(true)
+
+    try {
+      let url = "https://server-supermarket-app.onrender.com/api/offers"
+
+      // Add query parameters based on selected filters
+      const params = new URLSearchParams()
+
+      if (selectedSupermarket !== "all") {
+        params.append("chainName", selectedSupermarket)
+      }
+
+      if (selectedAisle !== "all") {
+        params.append("aisle", selectedAisle)
+      }
+
+      if (selectedBrand !== "all") {
+        params.append("brand", selectedBrand)
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`
+      }
+
+      const response = await fetch(url)
+
+      if (response.ok) {
+        const data = await response.json()
+        setOffers(data)
+
+        // Extract unique brands for the brand filter
+        const brands = Array.from(new Set(data.map((offer: Offer) => offer.brand).filter(Boolean)))
+        setAvailableBrands(brands)
       } else {
         toast({
           variant: "destructive",
           title: "Errore nel caricamento",
-          description: "Impossibile caricare le offerte per questa categoria",
+          description: "Impossibile caricare le offerte",
         })
       }
     } catch (error) {
@@ -91,31 +227,53 @@ export default function ExplorePage() {
     }
   }
 
-  const addToShoppingList = async (productName: string) => {
-    setAddingProducts((prev) => new Set(prev).add(productName))
+  const addToShoppingList = async (offer: Offer) => {
+    setAddingProducts((prev) => new Set(prev).add(offer._id))
 
     try {
+      // 1. Add to shopping list
       const token = localStorage.getItem("token")
-      const response = await fetch("https://server-supermarket-app.onrender.com/api/users/shopping-list", {
+      const addResponse = await fetch("https://server-supermarket-app.onrender.com/api/users/shopping-list", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-auth-token": token || "",
         },
         body: JSON.stringify({
-          productName: productName,
-          notes: "",
+          productName: offer.productName,
         }),
       })
 
-      if (response.ok) {
-        toast({
-          variant: "success",
-          title: "Prodotto aggiunto!",
-          description: `${productName} è stato aggiunto alla tua lista`,
-        })
+      if (addResponse.ok) {
+        const addedItem = await addResponse.json()
+
+        // 2. Pin the offer to the newly added item
+        if (addedItem._id) {
+          const pinResponse = await fetch(
+            `https://server-supermarket-app.onrender.com/api/users/shopping-list/${addedItem._id}/pin/${offer._id}`,
+            {
+              method: "PUT",
+              headers: {
+                "x-auth-token": token || "",
+              },
+            },
+          )
+
+          if (pinResponse.ok) {
+            toast({
+              variant: "success",
+              title: "Prodotto aggiunto!",
+              description: `${offer.productName} è stato aggiunto alla tua lista con l'offerta pinnata`,
+            })
+          } else {
+            toast({
+              title: "Prodotto aggiunto",
+              description: `${offer.productName} è stato aggiunto alla lista ma non è stato possibile pinnare l'offerta`,
+            })
+          }
+        }
       } else {
-        const errorData = await response.json()
+        const errorData = await addResponse.json()
         toast({
           variant: "destructive",
           title: "Errore nell'aggiunta",
@@ -131,136 +289,271 @@ export default function ExplorePage() {
     } finally {
       setAddingProducts((prev) => {
         const newSet = new Set(prev)
-        newSet.delete(productName)
+        newSet.delete(offer._id)
         return newSet
       })
     }
   }
 
-  const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId)
-    fetchOffersByCategory(categoryId)
-  }
-
-  if (selectedCategory) {
-    const category = CATEGORIES.find((c) => c.id === selectedCategory)
-
-    return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm px-4 py-4">
-          <div className="max-w-md mx-auto flex items-center">
-            <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="mr-3">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h1 className="text-lg font-semibold text-gray-900">{category?.name}</h1>
-          </div>
-        </header>
-
-        <div className="max-w-md mx-auto px-4 py-6">
-          {loading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">Caricamento offerte...</p>
-            </div>
-          ) : offers.length > 0 ? (
-            <div className="space-y-4">
-              {offers.map((offer) => {
-                const colors = SUPERMARKET_COLORS[offer.chainName] || ["#6b7280", "#374151"]
-                const isAdding = addingProducts.has(offer.productName)
-
-                return (
-                  <Card key={offer._id} className="border-0 shadow-sm">
-                    <CardContent className="p-4">
-                      <div
-                        className="w-full h-3 rounded-t-lg mb-3"
-                        style={{
-                          background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`,
-                        }}
-                      />
-
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-1">{offer.productName}</h3>
-                          <p className="text-sm text-gray-600 capitalize">
-                            {offer.chainName.replace(/([A-Z])/g, " $1").trim()}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() => addToShoppingList(offer.productName)}
-                          disabled={isAdding}
-                          className="bg-gradient-to-r from-green-600 to-blue-600"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          {isAdding ? "..." : "Aggiungi"}
-                        </Button>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg font-bold text-green-600">€{offer.offerPrice.toFixed(2)}</span>
-                          {offer.previousPrice && (
-                            <span className="text-sm text-gray-500 line-through">
-                              €{offer.previousPrice.toFixed(2)}
-                            </span>
-                          )}
-                        </div>
-
-                        {offer.discountPercentage && (
-                          <Badge variant="secondary" className="bg-red-100 text-red-700">
-                            -{offer.discountPercentage}%
-                          </Badge>
-                        )}
-                      </div>
-
-                      {offer.brand && <p className="text-sm text-gray-600 mt-2">{offer.brand}</p>}
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              <p>Nessuna offerta trovata per questa categoria</p>
-            </div>
-          )}
-        </div>
-      </div>
-    )
+  const clearFilters = () => {
+    setSelectedSupermarket("all")
+    setSelectedAisle("all")
+    setSelectedBrand("all")
+    setOffers([])
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <header className="bg-white shadow-sm px-4 py-4">
-        <div className="max-w-md mx-auto flex items-center">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="mr-3">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
-          <h1 className="text-lg font-semibold text-gray-900">Esplora per Tema</h1>
+      <header className="bg-white shadow-sm px-4 py-4 sticky top-0 z-30">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <h1 className="text-xl font-fredoka font-bold text-gray-900 flex items-center">
+            <span className="bg-gradient-to-r from-primary-blue to-primary-purple text-transparent bg-clip-text">
+              Cerca Offerte
+            </span>
+            <Search className="w-5 h-5 ml-2 text-primary-blue" />
+          </h1>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="text-gray-500"
+            disabled={selectedSupermarket === "all" && selectedAisle === "all" && selectedBrand === "all"}
+          >
+            <FilterX className="w-4 h-4 mr-1" />
+            Reset
+          </Button>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 py-6">
-        <div className="grid grid-cols-2 gap-4">
-          {CATEGORIES.map((category) => (
-            <Card
-              key={category.id}
-              className="cursor-pointer transition-all duration-200 hover:shadow-md border-0 shadow-sm"
-              onClick={() => handleCategorySelect(category.id)}
+      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+        {/* Filters Section */}
+        <EnhancedCard variant="elevated" className="p-4 space-y-4">
+          <h2 className="text-lg font-medium text-gray-900">Filtra per:</h2>
+
+          <div className="space-y-4">
+            {/* Supermarket Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Supermercato</label>
+              <Select value={selectedSupermarket} onValueChange={setSelectedSupermarket}>
+                <SelectTrigger className="w-full bg-white border-2 border-gray-200 rounded-xl h-12">
+                  <SelectValue placeholder="Tutti i supermercati" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti i supermercati</SelectItem>
+                  {filteredSupermarkets.map((market) => (
+                    <SelectItem key={market.id} value={market.id}>
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 mr-2 relative">
+                          <Image
+                            src={SUPERMARKET_LOGOS[market.id] || "/placeholder.svg"}
+                            alt={market.name}
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                        {market.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Aisle Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Reparto</label>
+              <Select value={selectedAisle} onValueChange={setSelectedAisle}>
+                <SelectTrigger className="w-full bg-white border-2 border-gray-200 rounded-xl h-12">
+                  <SelectValue placeholder="Tutti i reparti" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti i reparti</SelectItem>
+                  {VALID_AISLES.map((aisle) => (
+                    <SelectItem key={aisle.id} value={aisle.id}>
+                      {aisle.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Brand Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+              <Select value={selectedBrand} onValueChange={setSelectedBrand} disabled={availableBrands.length === 0}>
+                <SelectTrigger className="w-full bg-white border-2 border-gray-200 rounded-xl h-12">
+                  <SelectValue placeholder="Tutte le marche" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte le marche</SelectItem>
+                  {availableBrands.map((brand) => (
+                    <SelectItem key={brand} value={brand}>
+                      {brand}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Apply Filters Button */}
+            <Button
+              onClick={fetchOffers}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-xl h-12"
             >
-              <CardContent className="p-4 text-center">
-                <div className="text-3xl mb-2">{category.emoji}</div>
-                <h3 className="font-medium text-gray-900 text-sm leading-tight">
-                  {category.name.replace(/^[^\s]+ /, "")}
-                </h3>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              {loading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Cerco...</span>
+                </div>
+              ) : (
+                <>
+                  <Search className="w-5 h-5 mr-2" />
+                  Cerca Offerte
+                </>
+              )}
+            </Button>
+          </div>
+        </EnhancedCard>
+
+        {/* Results Section */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-10 h-10 border-4 border-primary-purple border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <>
+            {offers.length > 0 ? (
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <span>{offers.length} offerte trovate</span>
+                  {selectedSupermarket !== "all" && (
+                    <Badge className="ml-2 bg-blue-100 text-blue-700 border-0">
+                      {filteredSupermarkets.find((m) => m.id === selectedSupermarket)?.name}
+                    </Badge>
+                  )}
+                  {selectedAisle !== "all" && (
+                    <Badge className="ml-2 bg-green-100 text-green-700 border-0">
+                      {VALID_AISLES.find((a) => a.id === selectedAisle)?.name}
+                    </Badge>
+                  )}
+                  {selectedBrand !== "all" && (
+                    <Badge className="ml-2 bg-purple-100 text-purple-700 border-0">{selectedBrand}</Badge>
+                  )}
+                </h2>
+
+                <div className="space-y-4">
+                  {offers.map((offer, index) => (
+                    <div key={offer._id} className="animate-fade-in">
+                      <EnhancedCard variant="elevated" className="overflow-hidden">
+                        <CardContent className="p-0">
+                          {/* Supermarket Header */}
+                          <div className="h-10 relative p-2 flex items-center border-b border-gray-100">
+                            <div className="w-8 h-8 relative mr-2 overflow-hidden">
+                              <Image
+                                src={SUPERMARKET_LOGOS[offer.chainName] || "/placeholder.svg"}
+                                alt={offer.chainName}
+                                fill
+                                className="object-contain"
+                              />
+                            </div>
+                            <span className="text-xs font-medium capitalize">
+                              {offer.chainName.replace(/([A-Z])/g, " $1").trim()}
+                            </span>
+
+                            {/* Add to Shopping List Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => addToShoppingList(offer)}
+                              className="ml-auto text-primary-purple"
+                              disabled={addingProducts.has(offer._id)}
+                            >
+                              {addingProducts.has(offer._id) ? (
+                                <div className="w-4 h-4 border-2 border-primary-purple border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <>
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  <span className="text-xs">Aggiungi</span>
+                                </>
+                              )}
+                            </Button>
+                          </div>
+
+                          {/* Offer Details */}
+                          <div className="p-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="space-y-1">
+                                <h3 className="font-medium text-gray-900">{offer.productName}</h3>
+                                {offer.brand && <p className="text-sm text-gray-600">{offer.brand}</p>}
+                              </div>
+
+                              {offer.discountPercentage && (
+                                <Badge className="bg-red-100 text-red-600 border-0">-{offer.discountPercentage}%</Badge>
+                              )}
+                            </div>
+
+                            <div className="flex items-baseline justify-between">
+                              <div className="flex items-baseline space-x-2">
+                                <span className="text-xl font-bold text-primary-purple">
+                                  €{offer.offerPrice.toFixed(2)}
+                                </span>
+                                {offer.previousPrice && (
+                                  <span className="text-sm text-gray-400 line-through">
+                                    €{offer.previousPrice.toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Aisle Tags */}
+                              <div className="flex flex-wrap gap-1 justify-end">
+                                {offer.supermarketAisle.slice(0, 2).map((aisle, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs bg-gray-50">
+                                    {aisle}
+                                  </Badge>
+                                ))}
+                                {offer.supermarketAisle.length > 2 && (
+                                  <Badge variant="outline" className="text-xs bg-gray-50">
+                                    +{offer.supermarketAisle.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </EnhancedCard>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                {selectedSupermarket !== "all" || selectedAisle !== "all" || selectedBrand !== "all" ? (
+                  <>
+                    <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nessuna offerta trovata</h3>
+                    <p className="text-gray-600">Prova a modificare i filtri per trovare le offerte che cerchi</p>
+                    <Button variant="outline" onClick={clearFilters} className="mt-4">
+                      Resetta i filtri
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Inizia la tua ricerca</h3>
+                    <p className="text-gray-600">Seleziona i filtri qui sopra per trovare le migliori offerte</p>
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
+
+      {/* Bottom Navigation */}
+      <BottomNavbar />
     </div>
   )
 }
