@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { EnhancedCard, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Phone, Lock, Eye, EyeOff, Sparkles, Gift, HelpCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -138,7 +138,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Form Card */}
-        <EnhancedCard variant="floating" className="animate-slide-up mb-6">
+        <Card className="animate-slide-up mb-6">
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Phone Number Input */}
@@ -239,7 +239,7 @@ export default function LoginPage() {
               </Button>
             </form>
           </CardContent>
-        </EnhancedCard>
+        </Card>
 
         {/* Register Link */}
         <div className="text-center mb-8 animate-slide-up delay-200">
