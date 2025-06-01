@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -26,7 +26,7 @@ export default function LoginPage() {
     password: "",
   })
 
-  const [login, { isLoading }] = useLoginMutation()
+  const [login, { isLoading, error }] = useLoginMutation()
   const dispatch = useAppDispatch()
   const router = useRouter()
   const { toast } = useToast()
@@ -48,6 +48,8 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    console.log("🚀 Starting login process...")
+
     // Validate form
     const phoneError = validatePhoneNumber(formData.phoneNumber)
     const passwordError = validatePassword(formData.password)
@@ -58,14 +60,22 @@ export default function LoginPage() {
     })
 
     if (phoneError || passwordError) {
+      console.log("❌ Validation failed:", { phoneError, passwordError })
       return
     }
 
     try {
+      console.log("📞 Attempting login with:", {
+        phoneNumber: formData.phoneNumber, // Invio solo il numero senza +39
+        password: "***hidden***",
+      })
+
       const result = await login({
-        phoneNumber: formData.phoneNumber.startsWith("+39") ? formData.phoneNumber : `+39${formData.phoneNumber}`,
+        phoneNumber: formData.phoneNumber, // Invio solo il numero senza +39
         password: formData.password,
       }).unwrap()
+
+      console.log("✅ Login successful:", result)
 
       dispatch(setCredentials({ token: result.token }))
 
@@ -77,10 +87,22 @@ export default function LoginPage() {
 
       router.push("/shopping-list")
     } catch (err: any) {
+      console.error("❌ Login failed:", err)
+
+      let errorMessage = "Credenziali non valide"
+
+      if (err?.data?.message) {
+        errorMessage = err.data.message
+      } else if (err?.data?.error) {
+        errorMessage = err.data.error
+      } else if (err?.message) {
+        errorMessage = err.message
+      }
+
       toast({
         variant: "destructive",
         title: "Errore di accesso",
-        description: err?.data?.message || "Credenziali non valide",
+        description: errorMessage,
       })
     }
   }
@@ -91,6 +113,13 @@ export default function LoginPage() {
       description: "Il recupero password sarà disponibile presto. Contattaci per assistenza.",
     })
   }
+
+  // Debug: mostra errori API
+  React.useEffect(() => {
+    if (error) {
+      console.error("🔥 API Error:", error)
+    }
+  }, [error])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50">
@@ -123,6 +152,18 @@ export default function LoginPage() {
           <h1 className="font-fredoka text-4xl font-bold text-gray-900 mb-4">Ciao di nuovo! 👋</h1>
           <p className="font-nunito text-gray-600 text-lg">Accedi per continuare a risparmiare con SpesaViva</p>
         </div>
+
+        {/* Debug Info - Remove in production */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="mb-4 p-3 bg-yellow-100 rounded-lg text-sm">
+            <p>
+              <strong>Debug Info:</strong>
+            </p>
+            <p>Phone: {formData.phoneNumber}</p>
+            <p>Loading: {isLoading ? "Yes" : "No"}</p>
+            {error && <p className="text-red-600">Error: {JSON.stringify(error)}</p>}
+          </div>
+        )}
 
         {/* Login Form Card */}
         <Card className="animate-slide-up mb-6">

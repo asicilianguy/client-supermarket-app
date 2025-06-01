@@ -15,12 +15,13 @@ import { useToast } from "@/hooks/use-toast"
 import { useRegisterMutation } from "@/lib/api/authApi"
 import { useAppDispatch } from "@/lib/hooks"
 import { setCredentials } from "@/lib/slices/authSlice"
+import React from "react"
 
 const STEP_LABELS = ["Nome", "Telefono", "Password", "Supermercati"]
 
 export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [register, { isLoading }] = useRegisterMutation()
+  const [register, { isLoading, error }] = useRegisterMutation()
   const dispatch = useAppDispatch()
   const router = useRouter()
   const { toast } = useToast()
@@ -56,11 +57,8 @@ export default function RegisterPage() {
   }
 
   const validatePassword = (password: string) => {
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/
     if (!password) return "La password è obbligatoria"
-    if (!passwordRegex.test(password)) {
-      return "La password deve contenere almeno 8 caratteri, una maiuscola, un numero e un carattere speciale"
-    }
+    if (password.length < 6) return "La password deve avere almeno 6 caratteri"
     return ""
   }
 
@@ -131,13 +129,24 @@ export default function RegisterPage() {
   }
 
   const handleSubmit = async () => {
+    console.log("🚀 Starting registration process...")
+
     try {
-      const result = await register({
+      const registrationData = {
         name: formData.name.trim(),
-        phoneNumber: formData.phoneNumber,
+        phoneNumber: formData.phoneNumber, // Invio solo il numero senza +39
         password: formData.password,
         frequentedSupermarkets: formData.frequentedSupermarkets,
-      }).unwrap()
+      }
+
+      console.log("📝 Registration data:", {
+        ...registrationData,
+        password: "***hidden***",
+      })
+
+      const result = await register(registrationData).unwrap()
+
+      console.log("✅ Registration successful:", result)
 
       dispatch(setCredentials({ token: result.token }))
 
@@ -151,14 +160,33 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push("/shopping-list")
       }, 2000)
-    } catch (error: any) {
+    } catch (err: any) {
+      console.error("❌ Registration failed:", err)
+
+      let errorMessage = "Si è verificato un errore durante la registrazione"
+
+      if (err?.data?.message) {
+        errorMessage = err.data.message
+      } else if (err?.data?.error) {
+        errorMessage = err.data.error
+      } else if (err?.message) {
+        errorMessage = err.message
+      }
+
       toast({
         variant: "destructive",
         title: "Errore nella registrazione",
-        description: error?.data?.message || "Si è verificato un errore durante la registrazione",
+        description: errorMessage,
       })
     }
   }
+
+  // Debug: mostra errori API
+  React.useEffect(() => {
+    if (error) {
+      console.error("🔥 API Error:", error)
+    }
+  }, [error])
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -341,6 +369,21 @@ export default function RegisterPage() {
           }}
         />
 
+        {/* Debug Info - Remove in production */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="mb-4 p-3 bg-yellow-100 rounded-lg text-sm">
+            <p>
+              <strong>Debug Info:</strong>
+            </p>
+            <p>Step: {currentStep}</p>
+            <p>Name: {formData.name}</p>
+            <p>Phone: {formData.phoneNumber}</p>
+            <p>Supermarkets: {formData.frequentedSupermarkets.length}</p>
+            <p>Loading: {isLoading ? "Yes" : "No"}</p>
+            {error && <p className="text-red-600">Error: {JSON.stringify(error)}</p>}
+          </div>
+        )}
+
         {/* Form Card */}
         <Card className="animate-fade-in">
           <CardContent className="p-8">
@@ -371,7 +414,10 @@ export default function RegisterPage() {
                 }`}
               >
                 {isLoading ? (
-                  "Creazione account..."
+                  <div className="flex items-center space-x-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Creazione account...</span>
+                  </div>
                 ) : currentStep === 4 ? (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
