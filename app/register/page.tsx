@@ -1,24 +1,30 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Phone, Lock, User, ArrowLeft } from "lucide-react"
-import { Logo } from "@/components/ui/logo"
-import { SupermarketSelector } from "@/components/ui/supermarket-selector"
+import { Card, CardContent } from "@/components/ui/card"
+import { StepIndicator } from "@/components/ui/step-indicator"
 import { PasswordStrength } from "@/components/ui/password-strength"
-import { useToast } from "@/hooks/use-toast"
-import { motion } from "framer-motion"
+import { SupermarketSelector } from "@/components/ui/supermarket-selector"
+import { ArrowLeft, ArrowRight, User, Phone, Lock, Store, Sparkles, Gift } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 import { useRegisterMutation } from "@/lib/api/authApi"
 import { useAppDispatch } from "@/lib/hooks"
 import { setCredentials } from "@/lib/slices/authSlice"
 
+const STEP_LABELS = ["Nome", "Telefono", "Password", "Supermercati"]
+
 export default function RegisterPage() {
+  const [currentStep, setCurrentStep] = useState(1)
+  const [register, { isLoading }] = useRegisterMutation()
+  const dispatch = useAppDispatch()
+  const router = useRouter()
+  const { toast } = useToast()
+
   const [formData, setFormData] = useState({
     name: "",
     phoneNumber: "",
@@ -26,55 +32,108 @@ export default function RegisterPage() {
     confirmPassword: "",
     frequentedSupermarkets: [] as string[],
   })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [register, { isLoading }] = useRegisterMutation()
-  const dispatch = useAppDispatch()
-  const router = useRouter()
-  const { toast } = useToast()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const [errors, setErrors] = useState({
+    name: "",
+    phoneNumber: "",
+    password: "",
+    confirmPassword: "",
+    frequentedSupermarkets: "",
+  })
 
-    if (!formData.name || !formData.phoneNumber || !formData.password) {
-      toast({
-        variant: "destructive",
-        title: "Campi obbligatori",
-        description: "Compila tutti i campi richiesti",
-      })
-      return
+  // Validation functions
+  const validateName = (name: string) => {
+    if (!name.trim()) return "Il nome è obbligatorio"
+    if (name.trim().length < 2) return "Il nome deve avere almeno 2 caratteri"
+    return ""
+  }
+
+  const validatePhoneNumber = (phone: string) => {
+    const phoneRegex = /^\d{10}$/
+    if (!phone) return "Il numero di telefono è obbligatorio"
+    if (!phoneRegex.test(phone)) return "Inserisci esattamente 10 cifre"
+    return ""
+  }
+
+  const validatePassword = (password: string) => {
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/
+    if (!password) return "La password è obbligatoria"
+    if (!passwordRegex.test(password)) {
+      return "La password deve contenere almeno 8 caratteri, una maiuscola, un numero e un carattere speciale"
+    }
+    return ""
+  }
+
+  const validateConfirmPassword = (confirmPassword: string, password: string) => {
+    if (!confirmPassword) return "Conferma la password"
+    if (confirmPassword !== password) return "Le password non coincidono"
+    return ""
+  }
+
+  const validateSupermarkets = (supermarkets: string[]) => {
+    if (supermarkets.length === 0) return "Seleziona almeno un supermercato"
+    return ""
+  }
+
+  // Step validation
+  const isStepValid = (step: number) => {
+    switch (step) {
+      case 1:
+        return !validateName(formData.name)
+      case 2:
+        return !validatePhoneNumber(formData.phoneNumber)
+      case 3:
+        return (
+          !validatePassword(formData.password) && !validateConfirmPassword(formData.confirmPassword, formData.password)
+        )
+      case 4:
+        return !validateSupermarkets(formData.frequentedSupermarkets)
+      default:
+        return false
+    }
+  }
+
+  const handleNext = () => {
+    // Validate current step
+    const stepErrors = { ...errors }
+
+    switch (currentStep) {
+      case 1:
+        stepErrors.name = validateName(formData.name)
+        break
+      case 2:
+        stepErrors.phoneNumber = validatePhoneNumber(formData.phoneNumber)
+        break
+      case 3:
+        stepErrors.password = validatePassword(formData.password)
+        stepErrors.confirmPassword = validateConfirmPassword(formData.confirmPassword, formData.password)
+        break
+      case 4:
+        stepErrors.frequentedSupermarkets = validateSupermarkets(formData.frequentedSupermarkets)
+        break
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Password non corrispondenti",
-        description: "Le password inserite non coincidono",
-      })
-      return
-    }
+    setErrors(stepErrors)
 
-    if (formData.password.length < 6) {
-      toast({
-        variant: "destructive",
-        title: "Password troppo corta",
-        description: "La password deve essere di almeno 6 caratteri",
-      })
-      return
+    if (isStepValid(currentStep)) {
+      if (currentStep < 4) {
+        setCurrentStep(currentStep + 1)
+      } else {
+        handleSubmit()
+      }
     }
+  }
 
-    if (formData.frequentedSupermarkets.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Seleziona almeno un supermercato",
-        description: "Scegli i supermercati che frequenti di più",
-      })
-      return
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
     }
+  }
 
+  const handleSubmit = async () => {
     try {
       const result = await register({
-        name: formData.name,
+        name: formData.name.trim(),
         phoneNumber: formData.phoneNumber,
         password: formData.password,
         frequentedSupermarkets: formData.frequentedSupermarkets,
@@ -83,176 +142,284 @@ export default function RegisterPage() {
       dispatch(setCredentials({ token: result.token }))
 
       toast({
-        variant: "success",
-        title: "Registrazione completata!",
-        description: "Benvenuto in SpesaViva",
+        variant: "default",
+        title: "🎉 Registrazione completata!",
+        description: "Benvenuto in SpesaViva! Ora puoi iniziare a risparmiare.",
       })
 
-      router.push("/dashboard")
-    } catch (err: any) {
+      // Redirect to shopping list after toast
+      setTimeout(() => {
+        router.push("/shopping-list")
+      }, 2000)
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Errore di registrazione",
-        description: err?.data?.message || "Si è verificato un errore durante la registrazione",
+        title: "Errore nella registrazione",
+        description: error?.data?.message || "Si è verificato un errore durante la registrazione",
       })
     }
   }
 
-  const formatPhoneNumber = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.startsWith("39")) {
-      return numbers.slice(0, 12)
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6 animate-slide-up">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-orange/20 to-primary-pink/20 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <User className="w-8 h-8 text-primary-orange" />
+              </div>
+              <h2 className="font-fredoka text-2xl font-bold text-gray-900 mb-2">Come ti chiami?</h2>
+              <p className="font-nunito text-gray-600">Iniziamo con il tuo nome</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Input
+                  placeholder="Il tuo nome"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className={`text-lg py-4 rounded-2xl border-2 transition-all duration-200 ${
+                    errors.name ? "border-red-500" : "border-gray-200 focus:border-primary-purple"
+                  }`}
+                  autoFocus
+                />
+                {errors.name && <p className="text-red-500 text-sm mt-1 font-nunito">{errors.name}</p>}
+              </div>
+            </div>
+          </div>
+        )
+
+      case 2:
+        return (
+          <div className="space-y-6 animate-slide-up">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-blue/20 to-primary-purple/20 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <Phone className="w-8 h-8 text-primary-blue" />
+              </div>
+              <h2 className="font-fredoka text-2xl font-bold text-gray-900 mb-2">Il tuo numero</h2>
+              <p className="font-nunito text-gray-600">Useremo il tuo numero per accedere all'app</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-stretch">
+                  <div className="bg-gradient-to-r from-primary-blue to-primary-purple text-white px-4 rounded-l-2xl border-2 border-r-0 border-primary-blue flex items-center justify-center min-h-[3.5rem]">
+                    <span className="font-fredoka font-bold">+39</span>
+                  </div>
+                  <Input
+                    placeholder="1234567890"
+                    value={formData.phoneNumber}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "").slice(0, 10)
+                      setFormData({ ...formData, phoneNumber: value })
+                    }}
+                    className={`rounded-l-none rounded-r-2xl text-lg border-2 border-l-0 min-h-[3.5rem] transition-all duration-200 ${
+                      errors.phoneNumber ? "border-red-500" : "border-primary-blue focus:border-primary-purple"
+                    }`}
+                    type="tel"
+                    maxLength={10}
+                    autoFocus
+                  />
+                </div>
+                {errors.phoneNumber && <p className="text-red-500 text-sm mt-1 font-nunito">{errors.phoneNumber}</p>}
+                <p className="text-sm text-gray-500 mt-2 font-nunito">Inserisci le 10 cifre del tuo numero italiano</p>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 3:
+        return (
+          <div className="space-y-6 animate-slide-up">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-purple/20 to-primary-pink/20 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-primary-purple" />
+              </div>
+              <h2 className="font-fredoka text-2xl font-bold text-gray-900 mb-2">Scegli una password</h2>
+              <p className="font-nunito text-gray-600">Proteggi il tuo account con una password sicura</p>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className={`text-lg py-4 rounded-2xl border-2 transition-all duration-200 ${
+                    errors.password ? "border-red-500" : "border-gray-200 focus:border-primary-purple"
+                  }`}
+                  autoFocus
+                />
+                {errors.password && <p className="text-red-500 text-sm mt-1 font-nunito">{errors.password}</p>}
+              </div>
+
+              <div>
+                <Input
+                  type="password"
+                  placeholder="Conferma password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className={`text-lg py-4 rounded-2xl border-2 transition-all duration-200 ${
+                    errors.confirmPassword ? "border-red-500" : "border-gray-200 focus:border-primary-purple"
+                  }`}
+                />
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-sm mt-1 font-nunito">{errors.confirmPassword}</p>
+                )}
+              </div>
+
+              {formData.password && <PasswordStrength password={formData.password} />}
+            </div>
+          </div>
+        )
+
+      case 4:
+        return (
+          <div className="space-y-6 animate-slide-up">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-green/20 to-primary-yellow/20 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <Store className="w-8 h-8 text-primary-green" />
+              </div>
+              <h2 className="font-fredoka text-2xl font-bold text-gray-900 mb-2">I tuoi supermercati</h2>
+              <p className="font-nunito text-gray-600">Seleziona dove fai solitamente la spesa</p>
+            </div>
+
+            <SupermarketSelector
+              selectedSupermarkets={formData.frequentedSupermarkets}
+              onSelectionChange={(selected) => setFormData({ ...formData, frequentedSupermarkets: selected })}
+            />
+
+            {errors.frequentedSupermarkets && (
+              <p className="text-red-500 text-sm text-center font-nunito">{errors.frequentedSupermarkets}</p>
+            )}
+          </div>
+        )
+
+      default:
+        return null
     }
-    return numbers.slice(0, 10)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-purple/10 via-white to-primary-pink/10 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Torna alla home
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50">
+      {/* Header */}
+      <header className="bg-white/90 backdrop-blur-md px-4 py-4 border-b border-gray-100">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="rounded-2xl">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Indietro
+            </Button>
           </Link>
+          <Image src="/logo-spesaviva-horizontal.png" alt="SpesaViva" width={120} height={36} className="h-8 w-auto" />
+          <div className="w-20" /> {/* Spacer */}
+        </div>
+      </header>
 
-          <Logo className="mx-auto mb-6" />
-
-          <h1 className="text-2xl font-fredoka font-bold text-gray-900 mb-2">Unisciti a SpesaViva</h1>
-          <p className="text-gray-600">Crea il tuo account e inizia a risparmiare</p>
+      <div className="max-w-md mx-auto px-4 py-8">
+        {/* Free Badge */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-green to-primary-blue text-white px-6 py-3 rounded-full shadow-lg animate-bounce-gentle">
+            <Gift className="w-5 h-5" />
+            <span className="font-fredoka font-bold">PROVARE È GRATUITO</span>
+            <Sparkles className="w-5 h-5" />
+          </div>
         </div>
 
-        {/* Registration Form */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl font-fredoka">Registrati</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Nome completo</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    type="text"
-                    placeholder="Il tuo nome"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="pl-10 h-12 border-2 border-gray-200 focus:border-primary-purple rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
+        {/* Step Indicator - Centered */}
+        <StepIndicator
+          currentStep={currentStep}
+          totalSteps={4}
+          stepLabels={STEP_LABELS}
+          onStepClick={(step) => {
+            // Permetti navigazione solo agli step precedenti o al prossimo se il corrente è valido
+            if (step <= currentStep || (step === currentStep + 1 && isStepValid(currentStep))) {
+              setCurrentStep(step)
+            }
+          }}
+        />
 
-              {/* Phone Number */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Numero di telefono</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    type="tel"
-                    placeholder="3XX XXX XXXX"
-                    value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: formatPhoneNumber(e.target.value) })}
-                    className="pl-10 h-12 border-2 border-gray-200 focus:border-primary-purple rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
+        {/* Form Card */}
+        <Card className="animate-fade-in">
+          <CardContent className="p-8">
+            {renderStepContent()}
 
-              {/* Password */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Crea una password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="pl-10 pr-10 h-12 border-2 border-gray-200 focus:border-primary-purple rounded-xl"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {formData.password && <PasswordStrength password={formData.password} />}
-              </div>
+            {/* Navigation Buttons */}
+            <div className="flex space-x-4 mt-8">
+              {currentStep > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  className="flex-1 py-4 rounded-2xl border-2 border-gray-300 hover:border-primary-purple"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Indietro
+                </Button>
+              )}
 
-              {/* Confirm Password */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Conferma password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Conferma la password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="pl-10 pr-10 h-12 border-2 border-gray-200 focus:border-primary-purple rounded-xl"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Supermarket Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Supermercati frequentati</label>
-                <SupermarketSelector
-                  selectedSupermarkets={formData.frequentedSupermarkets}
-                  onSelectionChange={(supermarkets) =>
-                    setFormData({ ...formData, frequentedSupermarkets: supermarkets })
-                  }
-                />
-              </div>
-
-              {/* Submit Button */}
               <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-12 bg-gradient-to-r from-primary-purple to-primary-pink text-white rounded-xl font-medium text-base"
+                onClick={handleNext}
+                disabled={!isStepValid(currentStep) || isLoading}
+                className={`py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 ${
+                  currentStep === 1 ? "w-full" : "flex-1"
+                } ${
+                  isStepValid(currentStep)
+                    ? "bg-gradient-to-r from-primary-orange to-primary-pink text-white hover:from-primary-pink hover:to-primary-purple"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
               >
                 {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Registrazione in corso...</span>
-                  </div>
+                  "Creazione account..."
+                ) : currentStep === 4 ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Crea Account
+                  </>
                 ) : (
-                  "Crea Account"
+                  <>
+                    Avanti
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
                 )}
               </Button>
-            </form>
-
-            {/* Links */}
-            <div className="text-center">
-              <div className="text-sm text-gray-600">
-                Hai già un account?{" "}
-                <Link href="/login" className="text-primary-purple hover:text-primary-purple/80 font-medium">
-                  Accedi
-                </Link>
-              </div>
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+
+        {/* Login Link */}
+        <div className="text-center mt-8">
+          <Link href="/login" className="font-nunito text-gray-600 hover:text-primary-purple transition-colors">
+            Hai già un account? <span className="font-semibold">Accedi</span>
+          </Link>
+        </div>
+
+        {/* Free Features */}
+        <div className="mt-12 text-center">
+          <h3 className="font-fredoka text-lg font-bold text-gray-900 mb-4">Cosa ottieni provando SpesaViva</h3>
+          <div className="grid grid-cols-1 gap-3">
+            <div className="flex items-center space-x-3 bg-white/70 rounded-2xl p-4 backdrop-blur-sm">
+              <div className="w-8 h-8 bg-primary-green/20 rounded-full flex items-center justify-center">
+                <span className="text-primary-green">✓</span>
+              </div>
+              <span className="font-nunito text-gray-700">Lista della spesa intelligente</span>
+            </div>
+            <div className="flex items-center space-x-3 bg-white/70 rounded-2xl p-4 backdrop-blur-sm">
+              <div className="w-8 h-8 bg-primary-blue/20 rounded-full flex items-center justify-center">
+                <span className="text-primary-blue">✓</span>
+              </div>
+              <span className="font-nunito text-gray-700">Confronto offerte in tempo reale</span>
+            </div>
+            <div className="flex items-center space-x-3 bg-white/70 rounded-2xl p-4 backdrop-blur-sm">
+              <div className="w-8 h-8 bg-primary-purple/20 rounded-full flex items-center justify-center">
+                <span className="text-primary-purple">✓</span>
+              </div>
+              <span className="font-nunito text-gray-700">Accesso completo a 19+ catene</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
