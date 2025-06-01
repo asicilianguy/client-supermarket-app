@@ -48,7 +48,7 @@ export interface SearchOffersParams {
 export const offersApi = createApi({
   reducerPath: "offersApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://server-supermarket-app.onrender.com/api/offers", // ✅ Corretto
+    baseUrl: "https://server-supermarket-app.onrender.com/api/offers",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token
       if (token) {
@@ -60,7 +60,7 @@ export const offersApi = createApi({
   }),
   tagTypes: ["Offer", "Aisle", "Brand"],
   endpoints: (builder) => ({
-    // ✅ GET /api/offers/ - getAllOffers
+    // GET /api/offers/ - getAllOffers
     getAllOffers: builder.query<Offer[], GetOffersParams>({
       query: (params = {}) => {
         const searchParams = new URLSearchParams()
@@ -85,9 +85,28 @@ export const offersApi = createApi({
         console.error("❌ getAllOffers error:", response)
         return response
       },
+      async onQueryStarted(arg, { queryFulfilled, dispatch }) {
+        try {
+          const result = await queryFulfilled
+          // Toast di successo solo se ci sono risultati significativi
+          if (result.data.length > 0) {
+            // Non mostriamo toast per questa query perché è troppo frequente
+          }
+        } catch (error: any) {
+          // Toast di errore
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nel caricamento offerte",
+              description: error?.error?.data?.message || "Impossibile caricare le offerte",
+            })
+          }
+        }
+      },
     }),
 
-    // ✅ GET /api/offers/supermarket/:chainName - getOffersBySupermarket
+    // GET /api/offers/supermarket/:chainName - getOffersBySupermarket
     getOffersBySupermarket: builder.query<Offer[], { chainName: string; page?: number; limit?: number; sort?: string }>(
       {
         query: ({ chainName, page = 1, limit = 20, sort }) => {
@@ -115,10 +134,24 @@ export const offersApi = createApi({
           console.error("❌ getOffersBySupermarket error:", response)
           return response
         },
+        async onQueryStarted(arg, { queryFulfilled }) {
+          try {
+            await queryFulfilled
+          } catch (error: any) {
+            if (typeof window !== "undefined") {
+              const { toast } = await import("@/hooks/use-toast")
+              toast({
+                variant: "destructive",
+                title: "Errore nel caricamento",
+                description: `Impossibile caricare le offerte di ${arg.chainName}`,
+              })
+            }
+          }
+        },
       },
     ),
 
-    // ✅ GET /api/offers/search/:query - searchOffers
+    // GET /api/offers/search/:query - searchOffers
     searchOffers: builder.query<Offer[], SearchOffersParams>({
       query: ({ query, page = 1, limit = 20 }) => {
         const searchParams = new URLSearchParams({
@@ -144,9 +177,30 @@ export const offersApi = createApi({
         console.error("❌ searchOffers error:", response)
         return response
       },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          const result = await queryFulfilled
+          if (typeof window !== "undefined" && result.data.length === 0) {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              title: "Nessun risultato",
+              description: `Nessuna offerta trovata per "${arg.query}"`,
+            })
+          }
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nella ricerca",
+              description: `Impossibile cercare "${arg.query}"`,
+            })
+          }
+        }
+      },
     }),
 
-    // ✅ GET /api/offers/shopping-list - getOffersForShoppingList
+    // GET /api/offers/shopping-list - getOffersForShoppingList
     getOffersForShoppingList: builder.query<ProductOffers[], void>({
       query: () => {
         console.log("🛒 getOffersForShoppingList query: /shopping-list")
@@ -161,9 +215,32 @@ export const offersApi = createApi({
         console.error("❌ getOffersForShoppingList error:", response)
         return response
       },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          const result = await queryFulfilled
+          if (typeof window !== "undefined" && result.data.length > 0) {
+            const totalOffers = result.data.reduce((sum, product) => sum + product.offers.length, 0)
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "🎯 Offerte aggiornate!",
+              description: `Trovate ${totalOffers} offerte per i tuoi prodotti`,
+            })
+          }
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nel caricamento offerte",
+              description: "Impossibile caricare le offerte per la tua lista",
+            })
+          }
+        }
+      },
     }),
 
-    // ✅ GET /api/offers/best - getBestOffers
+    // GET /api/offers/best - getBestOffers
     getBestOffers: builder.query<Offer[], { limit?: number }>({
       query: ({ limit = 20 } = {}) => {
         const endpoint = `/best?limit=${limit}`
@@ -179,9 +256,31 @@ export const offersApi = createApi({
         console.error("❌ getBestOffers error:", response)
         return response
       },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          const result = await queryFulfilled
+          if (typeof window !== "undefined" && result.data.length > 0) {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "⭐ Migliori offerte caricate!",
+              description: `${result.data.length} offerte imperdibili disponibili`,
+            })
+          }
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nel caricamento",
+              description: "Impossibile caricare le migliori offerte",
+            })
+          }
+        }
+      },
     }),
 
-    // ✅ GET /api/offers/aisle/:aisle - getOffersByAisle
+    // GET /api/offers/aisle/:aisle - getOffersByAisle
     getOffersByAisle: builder.query<Offer[], { aisle: string; page?: number; limit?: number; chainName?: string }>({
       query: ({ aisle, page = 1, limit = 20, chainName }) => {
         const searchParams = new URLSearchParams({
@@ -205,9 +304,23 @@ export const offersApi = createApi({
         console.error("❌ getOffersByAisle error:", response)
         return response
       },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nel caricamento",
+              description: `Impossibile caricare le offerte del reparto ${arg.aisle}`,
+            })
+          }
+        }
+      },
     }),
 
-    // ✅ GET /api/offers/brand/:brand - getOffersByBrand
+    // GET /api/offers/brand/:brand - getOffersByBrand
     getOffersByBrand: builder.query<Offer[], { brand: string; page?: number; limit?: number }>({
       query: ({ brand, page = 1, limit = 20 }) => {
         const searchParams = new URLSearchParams({
@@ -230,9 +343,23 @@ export const offersApi = createApi({
         console.error("❌ getOffersByBrand error:", response)
         return response
       },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nel caricamento",
+              description: `Impossibile caricare le offerte di ${arg.brand}`,
+            })
+          }
+        }
+      },
     }),
 
-    // ✅ GET /api/offers/aisles - getAllAisles
+    // GET /api/offers/aisles - getAllAisles
     getAllAisles: builder.query<string[], void>({
       query: () => {
         console.log("📂 getAllAisles query: /aisles")
@@ -247,9 +374,23 @@ export const offersApi = createApi({
         console.error("❌ getAllAisles error:", response)
         return response
       },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nel caricamento",
+              description: "Impossibile caricare i reparti disponibili",
+            })
+          }
+        }
+      },
     }),
 
-    // ✅ GET /api/offers/brands - getAllBrands
+    // GET /api/offers/brands - getAllBrands
     getAllBrands: builder.query<string[], void>({
       query: () => {
         console.log("🏷️ getAllBrands query: /brands")
@@ -263,6 +404,20 @@ export const offersApi = createApi({
       transformErrorResponse: (response: any) => {
         console.error("❌ getAllBrands error:", response)
         return response
+      },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nel caricamento",
+              description: "Impossibile caricare le marche disponibili",
+            })
+          }
+        }
       },
     }),
   }),

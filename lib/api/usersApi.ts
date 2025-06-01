@@ -57,7 +57,22 @@ export const usersApi = createApi({
     getUserProfile: builder.query<User, void>({
       query: () => "/profile",
       providesTags: ["Profile"],
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nel caricamento profilo",
+              description: error?.error?.data?.message || "Impossibile caricare il profilo utente",
+            })
+          }
+        }
+      },
     }),
+
     updateUserProfile: builder.mutation<{ msg: string; user: User }, UpdateProfileRequest>({
       query: (data) => ({
         url: "/profile",
@@ -65,7 +80,30 @@ export const usersApi = createApi({
         body: data,
       }),
       invalidatesTags: ["Profile"],
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "✅ Profilo aggiornato!",
+              description: "Le tue informazioni sono state salvate con successo",
+            })
+          }
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nell'aggiornamento",
+              description: error?.error?.data?.message || "Impossibile aggiornare il profilo",
+            })
+          }
+        }
+      },
     }),
+
     updateFrequentedSupermarkets: builder.mutation<
       { msg: string; frequentedSupermarkets: string[] },
       UpdateSupermarketsRequest
@@ -76,13 +114,58 @@ export const usersApi = createApi({
         body: data,
       }),
       invalidatesTags: ["Profile"],
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "🏪 Supermercati aggiornati!",
+              description: `Hai selezionato ${arg.frequentedSupermarkets.length} supermercati`,
+            })
+          }
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nell'aggiornamento",
+              description: error?.error?.data?.message || "Impossibile aggiornare i supermercati",
+            })
+          }
+        }
+      },
     }),
+
     deleteAccount: builder.mutation<{ msg: string }, void>({
       query: () => ({
         url: "/account",
         method: "DELETE",
       }),
       invalidatesTags: ["Profile", "ShoppingList"],
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "Account eliminato",
+              description: "Il tuo account è stato eliminato con successo",
+            })
+          }
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nell'eliminazione",
+              description: error?.error?.data?.message || "Impossibile eliminare l'account",
+            })
+          }
+        }
+      },
     }),
 
     // Shopping List endpoints
@@ -95,14 +178,32 @@ export const usersApi = createApi({
               { type: "ShoppingList", id: "LIST" },
             ]
           : [{ type: "ShoppingList", id: "LIST" }],
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nel caricamento",
+              description: "Impossibile caricare la lista della spesa",
+            })
+          }
+        }
+      },
     }),
+
     addToShoppingList: builder.mutation<ShoppingListItem, AddToShoppingListRequest>({
       query: (data) => ({
         url: "/shopping-list",
         method: "POST",
         body: data,
       }),
-      invalidatesTags: [{ type: "ShoppingList", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ShoppingList", id: "LIST" },
+        { type: "Offer", id: "SHOPPING-LIST" }, // ✅ Invalida anche le offerte della shopping list
+      ],
       // Optimistic update
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
@@ -120,11 +221,28 @@ export const usersApi = createApi({
         )
         try {
           await queryFulfilled
-        } catch {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "✅ Prodotto aggiunto!",
+              description: `${arg.productName} è stato aggiunto alla tua lista`,
+            })
+          }
+        } catch (error: any) {
           patchResult.undo()
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nell'aggiunta",
+              description: error?.error?.data?.message || "Impossibile aggiungere il prodotto",
+            })
+          }
         }
       },
     }),
+
     updateShoppingListItem: builder.mutation<ShoppingListItem, { itemId: string; data: UpdateShoppingListItemRequest }>(
       {
         query: ({ itemId, data }) => ({
@@ -135,9 +253,33 @@ export const usersApi = createApi({
         invalidatesTags: (result, error, { itemId }) => [
           { type: "ShoppingList", id: itemId },
           { type: "ShoppingList", id: "LIST" },
+          { type: "Offer", id: "SHOPPING-LIST" }, // ✅ Invalida anche le offerte della shopping list
         ],
+        async onQueryStarted(arg, { queryFulfilled }) {
+          try {
+            await queryFulfilled
+            if (typeof window !== "undefined") {
+              const { toast } = await import("@/hooks/use-toast")
+              toast({
+                variant: "success",
+                title: "✅ Prodotto aggiornato!",
+                description: "Le modifiche sono state salvate",
+              })
+            }
+          } catch (error: any) {
+            if (typeof window !== "undefined") {
+              const { toast } = await import("@/hooks/use-toast")
+              toast({
+                variant: "destructive",
+                title: "Errore nell'aggiornamento",
+                description: error?.error?.data?.message || "Impossibile aggiornare il prodotto",
+              })
+            }
+          }
+        },
       },
     ),
+
     removeFromShoppingList: builder.mutation<{ msg: string }, string>({
       query: (itemId) => ({
         url: `/shopping-list/${itemId}`,
@@ -146,6 +288,7 @@ export const usersApi = createApi({
       invalidatesTags: (result, error, itemId) => [
         { type: "ShoppingList", id: itemId },
         { type: "ShoppingList", id: "LIST" },
+        { type: "Offer", id: "SHOPPING-LIST" }, // ✅ Invalida anche le offerte della shopping list
       ],
       // Optimistic update
       async onQueryStarted(itemId, { dispatch, queryFulfilled }) {
@@ -159,17 +302,59 @@ export const usersApi = createApi({
         )
         try {
           await queryFulfilled
-        } catch {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "🗑️ Prodotto rimosso!",
+              description: "Il prodotto è stato rimosso dalla lista",
+            })
+          }
+        } catch (error: any) {
           patchResult.undo()
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nella rimozione",
+              description: error?.error?.data?.message || "Impossibile rimuovere il prodotto",
+            })
+          }
         }
       },
     }),
+
     clearShoppingList: builder.mutation<{ msg: string }, void>({
       query: () => ({
         url: "/shopping-list/clear",
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "ShoppingList", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ShoppingList", id: "LIST" },
+        { type: "Offer", id: "SHOPPING-LIST" }, // ✅ Invalida anche le offerte della shopping list
+      ],
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "🧹 Lista svuotata!",
+              description: "Tutti i prodotti sono stati rimossi dalla lista",
+            })
+          }
+        } catch (error: any) {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nello svuotamento",
+              description: error?.error?.data?.message || "Impossibile svuotare la lista",
+            })
+          }
+        }
+      },
     }),
 
     // Product Pins endpoints
@@ -194,11 +379,28 @@ export const usersApi = createApi({
         )
         try {
           await queryFulfilled
-        } catch {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "📌 Offerta selezionata!",
+              description: "L'offerta è stata aggiunta ai tuoi preferiti",
+            })
+          }
+        } catch (error: any) {
           patchResult.undo()
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nella selezione",
+              description: error?.error?.data?.message || "Impossibile selezionare l'offerta",
+            })
+          }
         }
       },
     }),
+
     unpinProductFromShoppingItem: builder.mutation<ShoppingListItem, { itemId: string; offerId: string }>({
       query: ({ itemId, offerId }) => ({
         url: `/shopping-list/${itemId}/unpin/${offerId}`,
@@ -220,8 +422,24 @@ export const usersApi = createApi({
         )
         try {
           await queryFulfilled
-        } catch {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "success",
+              title: "📌 Offerta rimossa!",
+              description: "L'offerta è stata rimossa dai preferiti",
+            })
+          }
+        } catch (error: any) {
           patchResult.undo()
+          if (typeof window !== "undefined") {
+            const { toast } = await import("@/hooks/use-toast")
+            toast({
+              variant: "destructive",
+              title: "Errore nella rimozione",
+              description: error?.error?.data?.message || "Impossibile rimuovere l'offerta",
+            })
+          }
         }
       },
     }),

@@ -18,7 +18,7 @@ import {
   usePinProductToShoppingItemMutation,
   useUnpinProductFromShoppingItemMutation,
 } from "@/lib/api/usersApi"
-import { useGetOffersForShoppingListQuery } from "@/lib/api/offersApi" // ✅ Chiamata API corretta
+import { useGetOffersForShoppingListQuery } from "@/lib/api/offersApi"
 
 const SUPERMARKET_LOGOS: Record<string, string> = {
   todis: "/supermarkets/todis.png",
@@ -42,34 +42,9 @@ const SUPERMARKET_LOGOS: Record<string, string> = {
   despar: "/placeholder.svg?height=40&width=80&text=Despar",
 }
 
-// Brand-based background colors for visual variety
-const getBrandColors = (brand = "", chainName = ""): string => {
-  const brandMap: Record<string, string> = {
-    Gentilini: "from-amber-50 to-amber-100",
-    Barilla: "from-blue-50 to-blue-100",
-    "Mulino Bianco": "from-yellow-50 to-yellow-100",
-    Colussi: "from-green-50 to-green-100",
-    Kinder: "from-orange-50 to-orange-100",
-    Ferrero: "from-brown-50 to-amber-100",
-    Realforno: "from-teal-50 to-teal-100",
-    Parmalat: "from-blue-50 to-indigo-100",
-  }
-
-  const chainMap: Record<string, string> = {
-    esselunga: "from-blue-50 to-red-50",
-    lidl: "from-blue-50 to-yellow-50",
-    carrefourmarket: "from-red-50 to-blue-50",
-    carrefourexpress: "from-green-50 to-emerald-100",
-  }
-
-  return brandMap[brand] || chainMap[chainName] || "from-gray-50 to-slate-100"
-}
-
 export default function ShoppingListPage() {
   const { data: shoppingList = [], isLoading: listLoading } = useGetShoppingListQuery()
-
-  // ✅ Chiamata API corretta per le offerte della shopping list
-  const { data: productOffers = [], isLoading: offersLoading, error: offersError } = useGetOffersForShoppingListQuery()
+  const { data: productOffers = [], isLoading: offersLoading } = useGetOffersForShoppingListQuery()
 
   const [addToShoppingList, { isLoading: addLoading }] = useAddToShoppingListMutation()
   const [removeFromShoppingList] = useRemoveFromShoppingListMutation()
@@ -84,19 +59,11 @@ export default function ShoppingListPage() {
   const { toast } = useToast()
   const listRef = useRef<HTMLDivElement>(null)
 
-  // Debug logging
-  console.log("🛒 Shopping List Page State:", {
-    shoppingListCount: shoppingList.length,
-    productOffersCount: productOffers.length,
-    listLoading,
-    offersLoading,
-    hasOffersError: !!offersError,
-  })
-
   const handleAddToShoppingList = async () => {
     if (!newProduct.trim()) return
 
     try {
+      // Toast handled by API hook
       await addToShoppingList({
         productName: newProduct,
         notes: newNotes || undefined,
@@ -106,12 +73,6 @@ export default function ShoppingListPage() {
       setNewNotes("")
       setIsAddDialogOpen(false)
 
-      toast({
-        variant: "success",
-        title: "Prodotto aggiunto!",
-        description: `${newProduct} è stato aggiunto alla tua lista`,
-      })
-
       // Scroll to bottom of list
       setTimeout(() => {
         if (listRef.current) {
@@ -119,33 +80,22 @@ export default function ShoppingListPage() {
         }
       }, 100)
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Errore nell'aggiunta",
-        description: error?.data?.message || "Impossibile aggiungere il prodotto",
-      })
+      // Error toast handled by API hook
+      console.error("Error adding to shopping list:", error)
     }
   }
 
   const handleRemoveFromShoppingList = async (itemId: string, productName: string) => {
     setRemovingItem(itemId)
 
-    // Show toast
-    toast({
-      title: "Prodotto rimosso",
-      description: `${productName} è stato rimosso dalla lista`,
-    })
-
     try {
+      // Toast handled by API hook
       await removeFromShoppingList(itemId).unwrap()
       setRemovingItem(null)
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Errore nella rimozione",
-        description: "Impossibile rimuovere il prodotto",
-      })
+      // Error toast handled by API hook
       setRemovingItem(null)
+      console.error("Error removing from shopping list:", error)
     }
   }
 
@@ -157,26 +107,15 @@ export default function ShoppingListPage() {
       const isPinned = item.productPins.includes(offerId)
 
       if (isPinned) {
+        // Toast handled by API hook
         await unpinProductFromShoppingItem({ itemId, offerId }).unwrap()
-        toast({
-          variant: "success",
-          title: "Offerta rimossa",
-          description: "L'offerta è stata rimossa dai preferiti",
-        })
       } else {
+        // Toast handled by API hook
         await pinProductToShoppingItem({ itemId, offerId }).unwrap()
-        toast({
-          variant: "success",
-          title: "Offerta selezionata",
-          description: "L'offerta è stata aggiunta ai preferiti",
-        })
       }
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Errore",
-        description: "Impossibile aggiornare le offerte preferite",
-      })
+      // Error toast handled by API hook
+      console.error("Error toggling pin:", error)
     }
   }
 
@@ -344,20 +283,6 @@ export default function ShoppingListPage() {
           </Dialog>
         </div>
       </header>
-
-      {/* Debug Info - Remove in production */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="max-w-md mx-auto px-4 py-2">
-          <div className="mb-4 p-3 bg-yellow-100 rounded-lg text-sm">
-            <p>
-              <strong>Debug Info:</strong>
-            </p>
-            <p>Shopping List: {shoppingList.length} items</p>
-            <p>Product Offers: {offersLoading ? "Loading..." : `${productOffers.length} products with offers`}</p>
-            {offersError && <p className="text-red-600">Offers Error: {JSON.stringify(offersError)}</p>}
-          </div>
-        </div>
-      )}
 
       {/* Empty State */}
       {shoppingList.length === 0 ? (

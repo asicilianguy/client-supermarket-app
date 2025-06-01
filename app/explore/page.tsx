@@ -68,10 +68,8 @@ export default function ExplorePage() {
   const [addingProducts, setAddingProducts] = useState<Set<string>>(new Set())
 
   const { data: userProfile } = useGetUserProfileQuery()
-
-  // ✅ Chiamate API corrette per le offerte
-  const { data: aisles = [], isLoading: aislesLoading, error: aislesError } = useGetAllAislesQuery()
-  const { data: brands = [], isLoading: brandsLoading, error: brandsError } = useGetAllBrandsQuery()
+  const { data: aisles = [], isLoading: aislesLoading } = useGetAllAislesQuery()
+  const { data: brands = [], isLoading: brandsLoading } = useGetAllBrandsQuery()
 
   const {
     data: offers = [],
@@ -108,35 +106,28 @@ export default function ExplorePage() {
     setAddingProducts((prev) => new Set(prev).add(offer._id))
 
     try {
-      // 1. Add to shopping list
+      // 1. Add to shopping list (toast handled by API)
       const addedItem = await addToShoppingList({
         productName: offer.productName,
       }).unwrap()
 
-      // 2. Pin the offer to the newly added item
+      // 2. Pin the offer to the newly added item (toast handled by API)
       if (addedItem._id) {
         await pinProductToShoppingItem({
           itemId: addedItem._id,
           offerId: offer._id,
         }).unwrap()
 
+        // Additional success toast for the complete action
         toast({
           variant: "success",
-          title: "Prodotto aggiunto!",
-          description: `${offer.productName} è stato aggiunto alla tua lista con l'offerta pinnata`,
-        })
-      } else {
-        toast({
-          title: "Prodotto aggiunto",
-          description: `${offer.productName} è stato aggiunto alla lista ma non è stato possibile pinnare l'offerta`,
+          title: "🎯 Tutto fatto!",
+          description: `${offer.productName} aggiunto alla lista con offerta selezionata`,
         })
       }
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Errore nell'aggiunta",
-        description: error?.data?.message || "Impossibile aggiungere il prodotto",
-      })
+      // Error toasts are handled by the API hooks
+      console.error("Error in handleAddToShoppingList:", error)
     } finally {
       setAddingProducts((prev) => {
         const newSet = new Set(prev)
@@ -150,21 +141,13 @@ export default function ExplorePage() {
     setSelectedSupermarket("all")
     setSelectedAisle("all")
     setSelectedBrand("all")
+    toast({
+      title: "🔄 Filtri resettati",
+      description: "Tutti i filtri sono stati rimossi",
+    })
   }
 
   const hasActiveFilters = selectedSupermarket !== "all" || selectedAisle !== "all" || selectedBrand !== "all"
-
-  // Debug logging
-  console.log("🔍 Explore Page State:", {
-    selectedSupermarket,
-    selectedAisle,
-    selectedBrand,
-    offersCount: offers.length,
-    aislesCount: aisles.length,
-    brandsCount: brands.length,
-    isLoading: offersLoading,
-    hasError: !!offersError,
-  })
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -192,21 +175,6 @@ export default function ExplorePage() {
       </header>
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
-        {/* Debug Info - Remove in production */}
-        {process.env.NODE_ENV === "development" && (
-          <div className="mb-4 p-3 bg-yellow-100 rounded-lg text-sm">
-            <p>
-              <strong>Debug Info:</strong>
-            </p>
-            <p>Offers API: {offersLoading ? "Loading..." : `${offers.length} offers`}</p>
-            <p>Aisles API: {aislesLoading ? "Loading..." : `${aisles.length} aisles`}</p>
-            <p>Brands API: {brandsLoading ? "Loading..." : `${brands.length} brands`}</p>
-            {offersError && <p className="text-red-600">Offers Error: {JSON.stringify(offersError)}</p>}
-            {aislesError && <p className="text-red-600">Aisles Error: {JSON.stringify(aislesError)}</p>}
-            {brandsError && <p className="text-red-600">Brands Error: {JSON.stringify(brandsError)}</p>}
-          </div>
-        )}
-
         {/* Filters Section */}
         <Card className="p-4 space-y-4">
           <h2 className="text-lg font-medium text-gray-900">Filtra per:</h2>
@@ -292,7 +260,6 @@ export default function ExplorePage() {
             <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Errore nel caricamento</h3>
             <p className="text-gray-600">Si è verificato un errore durante il caricamento delle offerte</p>
-            <p className="text-sm text-red-600 mt-2">{JSON.stringify(offersError)}</p>
           </div>
         ) : (
           <>
