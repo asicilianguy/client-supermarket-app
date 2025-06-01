@@ -261,7 +261,7 @@ export default function ExplorePage() {
 
           if (pinResponse.ok) {
             toast({
-              variant: "success",
+              variant: "default",
               title: "Prodotto aggiunto!",
               description: `${offer.productName} è stato aggiunto alla tua lista con l'offerta pinnata`,
             })

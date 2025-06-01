@@ -148,7 +148,7 @@ export default function RegisterPage() {
         localStorage.setItem("token", data.token)
 
         toast({
-          variant: "success",
+          variant: "default",
           title: "🎉 Registrazione completata!",
           description: "Benvenuto in SpesaViva! Ora puoi iniziare a risparmiare.",
         })

@@ -147,7 +147,7 @@ export default function ProfilePage() {
         setProfile((prev) => (prev ? { ...prev, name: newName } : null))
         setEditingName(false)
         toast({
-          variant: "success",
+          variant: "default",
           title: "Nome aggiornato!",
           description: "Il tuo nome è stato modificato con successo",
         })
@@ -198,7 +198,7 @@ export default function ProfilePage() {
         setProfile((prev) => (prev ? { ...prev, frequentedSupermarkets: selectedSupermarkets } : null))
         setEditingSupermarkets(false)
         toast({
-          variant: "success",
+          variant: "default",
           title: "Supermercati aggiornati!",
           description: `Hai selezionato ${selectedSupermarkets.length} supermercati`,
         })

@@ -74,11 +74,11 @@ export default function LoginPage() {
         const data = await response.json()
         localStorage.setItem("token", data.token)
         toast({
-          variant: "success",
+          variant: "default",
           title: "🎉 Bentornato!",
           description: "Accesso effettuato con successo",
         })
-        router.push("/dashboard")
+        router.push("/shopping-list")
       } else {
         const errorData = await response.json()
         toast({
