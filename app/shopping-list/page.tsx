@@ -18,7 +18,7 @@ import {
   usePinProductToShoppingItemMutation,
   useUnpinProductFromShoppingItemMutation,
 } from "@/lib/api/usersApi"
-import { useGetOffersForShoppingListQuery } from "@/lib/api/offersApi"
+import { useGetOffersForShoppingListQuery } from "@/lib/api/offersApi" // ✅ Chiamata API corretta
 
 const SUPERMARKET_LOGOS: Record<string, string> = {
   todis: "/supermarkets/todis.png",
@@ -67,7 +67,10 @@ const getBrandColors = (brand = "", chainName = ""): string => {
 
 export default function ShoppingListPage() {
   const { data: shoppingList = [], isLoading: listLoading } = useGetShoppingListQuery()
-  const { data: productOffers = [] } = useGetOffersForShoppingListQuery()
+
+  // ✅ Chiamata API corretta per le offerte della shopping list
+  const { data: productOffers = [], isLoading: offersLoading, error: offersError } = useGetOffersForShoppingListQuery()
+
   const [addToShoppingList, { isLoading: addLoading }] = useAddToShoppingListMutation()
   const [removeFromShoppingList] = useRemoveFromShoppingListMutation()
   const [pinProductToShoppingItem] = usePinProductToShoppingItemMutation()
@@ -80,6 +83,15 @@ export default function ShoppingListPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const { toast } = useToast()
   const listRef = useRef<HTMLDivElement>(null)
+
+  // Debug logging
+  console.log("🛒 Shopping List Page State:", {
+    shoppingListCount: shoppingList.length,
+    productOffersCount: productOffers.length,
+    listLoading,
+    offersLoading,
+    hasOffersError: !!offersError,
+  })
 
   const handleAddToShoppingList = async () => {
     if (!newProduct.trim()) return
@@ -332,6 +344,20 @@ export default function ShoppingListPage() {
           </Dialog>
         </div>
       </header>
+
+      {/* Debug Info - Remove in production */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="max-w-md mx-auto px-4 py-2">
+          <div className="mb-4 p-3 bg-yellow-100 rounded-lg text-sm">
+            <p>
+              <strong>Debug Info:</strong>
+            </p>
+            <p>Shopping List: {shoppingList.length} items</p>
+            <p>Product Offers: {offersLoading ? "Loading..." : `${productOffers.length} products with offers`}</p>
+            {offersError && <p className="text-red-600">Offers Error: {JSON.stringify(offersError)}</p>}
+          </div>
+        </div>
+      )}
 
       {/* Empty State */}
       {shoppingList.length === 0 ? (

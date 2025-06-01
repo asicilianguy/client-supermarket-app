@@ -68,13 +68,15 @@ export default function ExplorePage() {
   const [addingProducts, setAddingProducts] = useState<Set<string>>(new Set())
 
   const { data: userProfile } = useGetUserProfileQuery()
-  const { data: aisles = [] } = useGetAllAislesQuery()
-  const { data: brands = [] } = useGetAllBrandsQuery()
+
+  // ✅ Chiamate API corrette per le offerte
+  const { data: aisles = [], isLoading: aislesLoading, error: aislesError } = useGetAllAislesQuery()
+  const { data: brands = [], isLoading: brandsLoading, error: brandsError } = useGetAllBrandsQuery()
 
   const {
     data: offers = [],
-    isLoading,
-    error,
+    isLoading: offersLoading,
+    error: offersError,
   } = useGetAllOffersQuery(
     {
       chainName: selectedSupermarket === "all" ? undefined : selectedSupermarket,
@@ -152,6 +154,18 @@ export default function ExplorePage() {
 
   const hasActiveFilters = selectedSupermarket !== "all" || selectedAisle !== "all" || selectedBrand !== "all"
 
+  // Debug logging
+  console.log("🔍 Explore Page State:", {
+    selectedSupermarket,
+    selectedAisle,
+    selectedBrand,
+    offersCount: offers.length,
+    aislesCount: aisles.length,
+    brandsCount: brands.length,
+    isLoading: offersLoading,
+    hasError: !!offersError,
+  })
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
@@ -178,6 +192,21 @@ export default function ExplorePage() {
       </header>
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+        {/* Debug Info - Remove in production */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="mb-4 p-3 bg-yellow-100 rounded-lg text-sm">
+            <p>
+              <strong>Debug Info:</strong>
+            </p>
+            <p>Offers API: {offersLoading ? "Loading..." : `${offers.length} offers`}</p>
+            <p>Aisles API: {aislesLoading ? "Loading..." : `${aisles.length} aisles`}</p>
+            <p>Brands API: {brandsLoading ? "Loading..." : `${brands.length} brands`}</p>
+            {offersError && <p className="text-red-600">Offers Error: {JSON.stringify(offersError)}</p>}
+            {aislesError && <p className="text-red-600">Aisles Error: {JSON.stringify(aislesError)}</p>}
+            {brandsError && <p className="text-red-600">Brands Error: {JSON.stringify(brandsError)}</p>}
+          </div>
+        )}
+
         {/* Filters Section */}
         <Card className="p-4 space-y-4">
           <h2 className="text-lg font-medium text-gray-900">Filtra per:</h2>
@@ -214,9 +243,9 @@ export default function ExplorePage() {
             {/* Aisle Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Reparto</label>
-              <Select value={selectedAisle} onValueChange={setSelectedAisle}>
+              <Select value={selectedAisle} onValueChange={setSelectedAisle} disabled={aislesLoading}>
                 <SelectTrigger className="w-full bg-white border-2 border-gray-200 rounded-xl h-12">
-                  <SelectValue placeholder="Tutti i reparti" />
+                  <SelectValue placeholder={aislesLoading ? "Caricamento..." : "Tutti i reparti"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutti i reparti</SelectItem>
@@ -232,9 +261,13 @@ export default function ExplorePage() {
             {/* Brand Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
-              <Select value={selectedBrand} onValueChange={setSelectedBrand} disabled={availableBrands.length === 0}>
+              <Select
+                value={selectedBrand}
+                onValueChange={setSelectedBrand}
+                disabled={brandsLoading || availableBrands.length === 0}
+              >
                 <SelectTrigger className="w-full bg-white border-2 border-gray-200 rounded-xl h-12">
-                  <SelectValue placeholder="Tutte le marche" />
+                  <SelectValue placeholder={brandsLoading ? "Caricamento..." : "Tutte le marche"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutte le marche</SelectItem>
@@ -250,15 +283,16 @@ export default function ExplorePage() {
         </Card>
 
         {/* Results Section */}
-        {isLoading ? (
+        {offersLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-10 h-10 border-4 border-primary-purple border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : error ? (
+        ) : offersError ? (
           <div className="text-center py-12">
             <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Errore nel caricamento</h3>
             <p className="text-gray-600">Si è verificato un errore durante il caricamento delle offerte</p>
+            <p className="text-sm text-red-600 mt-2">{JSON.stringify(offersError)}</p>
           </div>
         ) : (
           <>
