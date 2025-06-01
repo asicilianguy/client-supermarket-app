@@ -16,6 +16,8 @@ import {
   useAddToShoppingListMutation,
   usePinProductToShoppingItemMutation,
 } from "@/lib/api/usersApi"
+import { useAppDispatch } from "@/lib/hooks"
+import { offersApi } from "@/lib/api/offersApi"
 
 const SUPERMARKET_LOGOS: Record<string, string> = {
   todis: "/supermarkets/todis.png",
@@ -34,7 +36,7 @@ const SUPERMARKET_LOGOS: Record<string, string> = {
   paghipoco: "/placeholder.svg?height=40&width=80&text=Paghi+Poco",
   prestofresco: "/placeholder.svg?height=40&width=80&text=Presto",
   conad: "/placeholder.svg?height=40&width=80&text=Conad",
-  auchan: "/placeholder.svg?height=40&width=80&text=Auchan",
+  auchan: "/supermarkets/auchan.png",
   penny: "/supermarkets/penny.png",
   despar: "/placeholder.svg?height=40&width=80&text=Despar",
 }
@@ -90,6 +92,7 @@ export default function ExplorePage() {
   const [pinProductToShoppingItem] = usePinProductToShoppingItemMutation()
 
   const { toast } = useToast()
+  const dispatch = useAppDispatch()
 
   // Filter supermarkets to show only those the user has selected
   const filteredSupermarkets = useMemo(() => {
@@ -117,6 +120,9 @@ export default function ExplorePage() {
           itemId: addedItem._id,
           offerId: offer._id,
         }).unwrap()
+
+        // 3. ✅ Invalida manualmente la cache delle offerte della shopping list
+        dispatch(offersApi.util.invalidateTags([{ type: "Offer", id: "SHOPPING-LIST" }]))
 
         // Additional success toast for the complete action
         toast({
