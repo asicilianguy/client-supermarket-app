@@ -132,35 +132,19 @@ export default function RegisterPage() {
     console.log("🚀 Starting registration process...")
 
     try {
-      // Prova prima con +39, poi senza se fallisce
-      const phoneWithPrefix = `+39${formData.phoneNumber}`
-
       const registrationData = {
         name: formData.name.trim(),
-        phoneNumber: phoneWithPrefix,
+        phoneNumber: formData.phoneNumber, // Il server gestisce il formato +39
         password: formData.password,
         frequentedSupermarkets: formData.frequentedSupermarkets,
       }
 
-      console.log("📝 Registration data with +39:", {
+      console.log("📝 Registration data:", {
         ...registrationData,
         password: "***hidden***",
       })
 
-      let result
-      try {
-        result = await register(registrationData).unwrap()
-      } catch (firstError: any) {
-        console.log("⚠️ Registration with +39 failed, trying without prefix...")
-
-        // Se fallisce con +39, prova senza
-        const registrationDataWithoutPrefix = {
-          ...registrationData,
-          phoneNumber: formData.phoneNumber,
-        }
-
-        result = await register(registrationDataWithoutPrefix).unwrap()
-      }
+      const result = await register(registrationData).unwrap()
 
       console.log("✅ Registration successful:", result)
 
@@ -181,19 +165,11 @@ export default function RegisterPage() {
 
       let errorMessage = "Si è verificato un errore durante la registrazione"
 
-      // Gestione errori più specifica
-      if (err?.status === 404) {
-        errorMessage = "Servizio temporaneamente non disponibile. Riprova più tardi."
-      } else if (err?.status === 400) {
-        errorMessage = "Dati non validi. Controlla i campi inseriti."
-      } else if (err?.status === 409) {
-        errorMessage = "Questo numero di telefono è già registrato."
-      } else if (err?.status === 500) {
-        errorMessage = "Errore del server. Riprova più tardi."
-      } else if (err?.data?.message) {
+      // Gestione errori migliorata basata sulla struttura del server
+      if (err?.data?.message) {
         errorMessage = err.data.message
-      } else if (err?.data?.error) {
-        errorMessage = err.data.error
+      } else if (err?.data?.errors && Array.isArray(err.data.errors)) {
+        errorMessage = err.data.errors.map((e: any) => e.msg).join(", ")
       } else if (err?.message) {
         errorMessage = err.message
       }
@@ -405,8 +381,7 @@ export default function RegisterPage() {
             <p>Phone: {formData.phoneNumber}</p>
             <p>Supermarkets: {formData.frequentedSupermarkets.length}</p>
             <p>Loading: {isLoading ? "Yes" : "No"}</p>
-            <p>API Base URL: https://server-supermarket-app.onrender.com/api</p>
-            <p>Register Endpoint: /auth/register</p>
+            <p>API Endpoint: /api/users/register</p>
             {error && <p className="text-red-600">Error: {JSON.stringify(error)}</p>}
           </div>
         )}

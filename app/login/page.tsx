@@ -65,29 +65,15 @@ export default function LoginPage() {
     }
 
     try {
-      // Prova prima con +39, poi senza se fallisce
-      const phoneWithPrefix = `+39${formData.phoneNumber}`
-
-      console.log("📞 Attempting login with +39 prefix:", {
-        phoneNumber: phoneWithPrefix,
+      console.log("📞 Attempting login with:", {
+        phoneNumber: formData.phoneNumber, // Il server aggiunge automaticamente +39
         password: "***hidden***",
       })
 
-      let result
-      try {
-        result = await login({
-          phoneNumber: phoneWithPrefix,
-          password: formData.password,
-        }).unwrap()
-      } catch (firstError: any) {
-        console.log("⚠️ Login with +39 failed, trying without prefix...")
-
-        // Se fallisce con +39, prova senza
-        result = await login({
-          phoneNumber: formData.phoneNumber,
-          password: formData.password,
-        }).unwrap()
-      }
+      const result = await login({
+        phoneNumber: formData.phoneNumber, // Il server gestisce il formato +39
+        password: formData.password,
+      }).unwrap()
 
       console.log("✅ Login successful:", result)
 
@@ -105,17 +91,11 @@ export default function LoginPage() {
 
       let errorMessage = "Credenziali non valide"
 
-      // Gestione errori più specifica
-      if (err?.status === 404) {
-        errorMessage = "Servizio temporaneamente non disponibile. Riprova più tardi."
-      } else if (err?.status === 401) {
-        errorMessage = "Numero di telefono o password non corretti"
-      } else if (err?.status === 500) {
-        errorMessage = "Errore del server. Riprova più tardi."
-      } else if (err?.data?.message) {
+      // Gestione errori migliorata basata sulla struttura del server
+      if (err?.data?.message) {
         errorMessage = err.data.message
-      } else if (err?.data?.error) {
-        errorMessage = err.data.error
+      } else if (err?.data?.errors && Array.isArray(err.data.errors)) {
+        errorMessage = err.data.errors.map((e: any) => e.msg).join(", ")
       } else if (err?.message) {
         errorMessage = err.message
       }
@@ -182,8 +162,7 @@ export default function LoginPage() {
             </p>
             <p>Phone: {formData.phoneNumber}</p>
             <p>Loading: {isLoading ? "Yes" : "No"}</p>
-            <p>API Base URL: https://server-supermarket-app.onrender.com/api</p>
-            <p>Login Endpoint: /auth/login</p>
+            <p>API Endpoint: /api/users/login</p>
             {error && <p className="text-red-600">Error: {JSON.stringify(error)}</p>}
           </div>
         )}
