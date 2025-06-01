@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 import type { RootState } from "../store"
+import { toast } from "@/hooks/use-toast"
 
 export interface User {
   _id: string
@@ -57,20 +58,6 @@ export const usersApi = createApi({
     getUserProfile: builder.query<User, void>({
       query: () => "/profile",
       providesTags: ["Profile"],
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          await queryFulfilled
-        } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel caricamento profilo",
-              description: error?.error?.data?.message || "Impossibile caricare il profilo utente",
-            })
-          }
-        }
-      },
     }),
 
     updateUserProfile: builder.mutation<{ msg: string; user: User }, UpdateProfileRequest>({
@@ -83,23 +70,17 @@ export const usersApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "✅ Profilo aggiornato!",
-              description: "Le tue informazioni sono state salvate con successo",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "✅ Profilo aggiornato!",
+            description: "Le tue informazioni sono state salvate con successo",
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nell'aggiornamento",
-              description: error?.error?.data?.message || "Impossibile aggiornare il profilo",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nell'aggiornamento",
+            description: error?.error?.data?.message || "Impossibile aggiornare il profilo",
+          })
         }
       },
     }),
@@ -117,23 +98,17 @@ export const usersApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "🏪 Supermercati aggiornati!",
-              description: `Hai selezionato ${arg.frequentedSupermarkets.length} supermercati`,
-            })
-          }
+          toast({
+            variant: "success",
+            title: "🏪 Supermercati aggiornati!",
+            description: `Hai selezionato ${arg.frequentedSupermarkets.length} supermercati`,
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nell'aggiornamento",
-              description: error?.error?.data?.message || "Impossibile aggiornare i supermercati",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nell'aggiornamento",
+            description: error?.error?.data?.message || "Impossibile aggiornare i supermercati",
+          })
         }
       },
     }),
@@ -147,23 +122,17 @@ export const usersApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "Account eliminato",
-              description: "Il tuo account è stato eliminato con successo",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "Account eliminato",
+            description: "Il tuo account è stato eliminato con successo",
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nell'eliminazione",
-              description: error?.error?.data?.message || "Impossibile eliminare l'account",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nell'eliminazione",
+            description: error?.error?.data?.message || "Impossibile eliminare l'account",
+          })
         }
       },
     }),
@@ -178,20 +147,6 @@ export const usersApi = createApi({
               { type: "ShoppingList", id: "LIST" },
             ]
           : [{ type: "ShoppingList", id: "LIST" }],
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          await queryFulfilled
-        } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel caricamento",
-              description: "Impossibile caricare la lista della spesa",
-            })
-          }
-        }
-      },
     }),
 
     addToShoppingList: builder.mutation<ShoppingListItem, AddToShoppingListRequest>({
@@ -221,24 +176,18 @@ export const usersApi = createApi({
         )
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "✅ Prodotto aggiunto!",
-              description: `${arg.productName} è stato aggiunto alla tua lista`,
-            })
-          }
+          toast({
+            variant: "success",
+            title: "✅ Prodotto aggiunto!",
+            description: `${arg.productName} è stato aggiunto alla tua lista`,
+          })
         } catch (error: any) {
           patchResult.undo()
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nell'aggiunta",
-              description: error?.error?.data?.message || "Impossibile aggiungere il prodotto",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nell'aggiunta",
+            description: error?.error?.data?.message || "Impossibile aggiungere il prodotto",
+          })
         }
       },
     }),
@@ -258,23 +207,17 @@ export const usersApi = createApi({
         async onQueryStarted(arg, { queryFulfilled }) {
           try {
             await queryFulfilled
-            if (typeof window !== "undefined") {
-              const { toast } = await import("@/hooks/use-toast")
-              toast({
-                variant: "success",
-                title: "✅ Prodotto aggiornato!",
-                description: "Le modifiche sono state salvate",
-              })
-            }
+            toast({
+              variant: "success",
+              title: "✅ Prodotto aggiornato!",
+              description: "Le modifiche sono state salvate",
+            })
           } catch (error: any) {
-            if (typeof window !== "undefined") {
-              const { toast } = await import("@/hooks/use-toast")
-              toast({
-                variant: "destructive",
-                title: "Errore nell'aggiornamento",
-                description: error?.error?.data?.message || "Impossibile aggiornare il prodotto",
-              })
-            }
+            toast({
+              variant: "destructive",
+              title: "Errore nell'aggiornamento",
+              description: error?.error?.data?.message || "Impossibile aggiornare il prodotto",
+            })
           }
         },
       },
@@ -302,24 +245,18 @@ export const usersApi = createApi({
         )
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "🗑️ Prodotto rimosso!",
-              description: "Il prodotto è stato rimosso dalla lista",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "🗑️ Prodotto rimosso!",
+            description: "Il prodotto è stato rimosso dalla lista",
+          })
         } catch (error: any) {
           patchResult.undo()
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nella rimozione",
-              description: error?.error?.data?.message || "Impossibile rimuovere il prodotto",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nella rimozione",
+            description: error?.error?.data?.message || "Impossibile rimuovere il prodotto",
+          })
         }
       },
     }),
@@ -336,23 +273,17 @@ export const usersApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "🧹 Lista svuotata!",
-              description: "Tutti i prodotti sono stati rimossi dalla lista",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "🧹 Lista svuotata!",
+            description: "Tutti i prodotti sono stati rimossi dalla lista",
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nello svuotamento",
-              description: error?.error?.data?.message || "Impossibile svuotare la lista",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nello svuotamento",
+            description: error?.error?.data?.message || "Impossibile svuotare la lista",
+          })
         }
       },
     }),
@@ -379,24 +310,18 @@ export const usersApi = createApi({
         )
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "📌 Offerta selezionata!",
-              description: "L'offerta è stata aggiunta ai tuoi preferiti",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "📌 Offerta selezionata!",
+            description: "L'offerta è stata aggiunta ai tuoi preferiti",
+          })
         } catch (error: any) {
           patchResult.undo()
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nella selezione",
-              description: error?.error?.data?.message || "Impossibile selezionare l'offerta",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nella selezione",
+            description: error?.error?.data?.message || "Impossibile selezionare l'offerta",
+          })
         }
       },
     }),
@@ -422,24 +347,18 @@ export const usersApi = createApi({
         )
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "📌 Offerta rimossa!",
-              description: "L'offerta è stata rimossa dai preferiti",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "📌 Offerta rimossa!",
+            description: "L'offerta è stata rimossa dai preferiti",
+          })
         } catch (error: any) {
           patchResult.undo()
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nella rimozione",
-              description: error?.error?.data?.message || "Impossibile rimuovere l'offerta",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nella rimozione",
+            description: error?.error?.data?.message || "Impossibile rimuovere l'offerta",
+          })
         }
       },
     }),

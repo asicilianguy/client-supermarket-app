@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import { toast } from "@/hooks/use-toast"
 
 export interface LoginRequest {
   phoneNumber: string
@@ -54,29 +55,23 @@ export const authApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "🎉 Bentornato!",
-              description: "Accesso effettuato con successo",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "🎉 Bentornato!",
+            description: "Accesso effettuato con successo",
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            let errorMessage = "Credenziali non valide"
-            if (error?.error?.data?.message) {
-              errorMessage = error.error.data.message
-            } else if (error?.error?.data?.errors && Array.isArray(error.error.data.errors)) {
-              errorMessage = error.error.data.errors.map((e: any) => e.msg).join(", ")
-            }
-            toast({
-              variant: "destructive",
-              title: "❌ Errore di accesso",
-              description: errorMessage,
-            })
+          let errorMessage = "Credenziali non valide"
+          if (error?.error?.data?.message) {
+            errorMessage = error.error.data.message
+          } else if (error?.error?.data?.errors && Array.isArray(error.error.data.errors)) {
+            errorMessage = error.error.data.errors.map((e: any) => e.msg).join(", ")
           }
+          toast({
+            variant: "destructive",
+            title: "❌ Errore di accesso",
+            description: errorMessage,
+          })
         }
       },
     }),
@@ -102,29 +97,23 @@ export const authApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "🎉 Registrazione completata!",
-              description: "Benvenuto in SpesaViva! Ora puoi iniziare a risparmiare.",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "🎉 Registrazione completata!",
+            description: "Benvenuto in SpesaViva! Ora puoi iniziare a risparmiare.",
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            let errorMessage = "Si è verificato un errore durante la registrazione"
-            if (error?.error?.data?.message) {
-              errorMessage = error.error.data.message
-            } else if (error?.error?.data?.errors && Array.isArray(error.error.data.errors)) {
-              errorMessage = error.error.data.errors.map((e: any) => e.msg).join(", ")
-            }
-            toast({
-              variant: "destructive",
-              title: "❌ Errore nella registrazione",
-              description: errorMessage,
-            })
+          let errorMessage = "Si è verificato un errore durante la registrazione"
+          if (error?.error?.data?.message) {
+            errorMessage = error.error.data.message
+          } else if (error?.error?.data?.errors && Array.isArray(error.error.data.errors)) {
+            errorMessage = error.error.data.errors.map((e: any) => e.msg).join(", ")
           }
+          toast({
+            variant: "destructive",
+            title: "❌ Errore nella registrazione",
+            description: errorMessage,
+          })
         }
       },
     }),
@@ -138,23 +127,17 @@ export const authApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "✅ Numero verificato!",
-              description: "Il tuo numero di telefono è stato verificato con successo",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "✅ Numero verificato!",
+            description: "Il tuo numero di telefono è stato verificato con successo",
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nella verifica",
-              description: error?.error?.data?.message || "Codice di verifica non valido",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nella verifica",
+            description: error?.error?.data?.message || "Codice di verifica non valido",
+          })
         }
       },
     }),
@@ -168,23 +151,17 @@ export const authApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "📱 Codice inviato!",
-              description: "Un nuovo codice di verifica è stato inviato al tuo numero",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "📱 Codice inviato!",
+            description: "Un nuovo codice di verifica è stato inviato al tuo numero",
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nell'invio",
-              description: error?.error?.data?.message || "Impossibile inviare il codice",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nell'invio",
+            description: error?.error?.data?.message || "Impossibile inviare il codice",
+          })
         }
       },
     }),
@@ -198,23 +175,17 @@ export const authApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "📱 Codice di reset inviato!",
-              description: "Controlla il tuo telefono per il codice di reset password",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "📱 Codice di reset inviato!",
+            description: "Controlla il tuo telefono per il codice di reset password",
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nella richiesta",
-              description: error?.error?.data?.message || "Impossibile inviare il codice di reset",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nella richiesta",
+            description: error?.error?.data?.message || "Impossibile inviare il codice di reset",
+          })
         }
       },
     }),
@@ -228,23 +199,17 @@ export const authApi = createApi({
       async onQueryStarted(arg, { queryFulfilled }) {
         try {
           await queryFulfilled
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "🔒 Password aggiornata!",
-              description: "La tua password è stata modificata con successo",
-            })
-          }
+          toast({
+            variant: "success",
+            title: "🔒 Password aggiornata!",
+            description: "La tua password è stata modificata con successo",
+          })
         } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel reset",
-              description: error?.error?.data?.message || "Impossibile aggiornare la password",
-            })
-          }
+          toast({
+            variant: "destructive",
+            title: "Errore nel reset",
+            description: error?.error?.data?.message || "Impossibile aggiornare la password",
+          })
         }
       },
     }),

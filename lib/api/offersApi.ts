@@ -85,25 +85,6 @@ export const offersApi = createApi({
         console.error("❌ getAllOffers error:", response)
         return response
       },
-      async onQueryStarted(arg, { queryFulfilled, dispatch }) {
-        try {
-          const result = await queryFulfilled
-          // Toast di successo solo se ci sono risultati significativi
-          if (result.data.length > 0) {
-            // Non mostriamo toast per questa query perché è troppo frequente
-          }
-        } catch (error: any) {
-          // Toast di errore
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel caricamento offerte",
-              description: error?.error?.data?.message || "Impossibile caricare le offerte",
-            })
-          }
-        }
-      },
     }),
 
     // GET /api/offers/supermarket/:chainName - getOffersBySupermarket
@@ -134,20 +115,6 @@ export const offersApi = createApi({
           console.error("❌ getOffersBySupermarket error:", response)
           return response
         },
-        async onQueryStarted(arg, { queryFulfilled }) {
-          try {
-            await queryFulfilled
-          } catch (error: any) {
-            if (typeof window !== "undefined") {
-              const { toast } = await import("@/hooks/use-toast")
-              toast({
-                variant: "destructive",
-                title: "Errore nel caricamento",
-                description: `Impossibile caricare le offerte di ${arg.chainName}`,
-              })
-            }
-          }
-        },
       },
     ),
 
@@ -177,27 +144,6 @@ export const offersApi = createApi({
         console.error("❌ searchOffers error:", response)
         return response
       },
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          const result = await queryFulfilled
-          if (typeof window !== "undefined" && result.data.length === 0) {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              title: "Nessun risultato",
-              description: `Nessuna offerta trovata per "${arg.query}"`,
-            })
-          }
-        } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nella ricerca",
-              description: `Impossibile cercare "${arg.query}"`,
-            })
-          }
-        }
-      },
     }),
 
     // GET /api/offers/shopping-list - getOffersForShoppingList
@@ -214,29 +160,6 @@ export const offersApi = createApi({
       transformErrorResponse: (response: any) => {
         console.error("❌ getOffersForShoppingList error:", response)
         return response
-      },
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          const result = await queryFulfilled
-          if (typeof window !== "undefined" && result.data.length > 0) {
-            const totalOffers = result.data.reduce((sum, product) => sum + product.offers.length, 0)
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "🎯 Offerte aggiornate!",
-              description: `Trovate ${totalOffers} offerte per i tuoi prodotti`,
-            })
-          }
-        } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel caricamento offerte",
-              description: "Impossibile caricare le offerte per la tua lista",
-            })
-          }
-        }
       },
     }),
 
@@ -255,28 +178,6 @@ export const offersApi = createApi({
       transformErrorResponse: (response: any) => {
         console.error("❌ getBestOffers error:", response)
         return response
-      },
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          const result = await queryFulfilled
-          if (typeof window !== "undefined" && result.data.length > 0) {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "success",
-              title: "⭐ Migliori offerte caricate!",
-              description: `${result.data.length} offerte imperdibili disponibili`,
-            })
-          }
-        } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel caricamento",
-              description: "Impossibile caricare le migliori offerte",
-            })
-          }
-        }
       },
     }),
 
@@ -304,20 +205,6 @@ export const offersApi = createApi({
         console.error("❌ getOffersByAisle error:", response)
         return response
       },
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          await queryFulfilled
-        } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel caricamento",
-              description: `Impossibile caricare le offerte del reparto ${arg.aisle}`,
-            })
-          }
-        }
-      },
     }),
 
     // GET /api/offers/brand/:brand - getOffersByBrand
@@ -343,20 +230,6 @@ export const offersApi = createApi({
         console.error("❌ getOffersByBrand error:", response)
         return response
       },
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          await queryFulfilled
-        } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel caricamento",
-              description: `Impossibile caricare le offerte di ${arg.brand}`,
-            })
-          }
-        }
-      },
     }),
 
     // GET /api/offers/aisles - getAllAisles
@@ -374,20 +247,6 @@ export const offersApi = createApi({
         console.error("❌ getAllAisles error:", response)
         return response
       },
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          await queryFulfilled
-        } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel caricamento",
-              description: "Impossibile caricare i reparti disponibili",
-            })
-          }
-        }
-      },
     }),
 
     // GET /api/offers/brands - getAllBrands
@@ -404,20 +263,6 @@ export const offersApi = createApi({
       transformErrorResponse: (response: any) => {
         console.error("❌ getAllBrands error:", response)
         return response
-      },
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          await queryFulfilled
-        } catch (error: any) {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("@/hooks/use-toast")
-            toast({
-              variant: "destructive",
-              title: "Errore nel caricamento",
-              description: "Impossibile caricare le marche disponibili",
-            })
-          }
-        }
       },
     }),
   }),
