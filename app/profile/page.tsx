@@ -19,6 +19,7 @@ import {
 } from "@/lib/api/usersApi"
 import { useAppDispatch } from "@/lib/hooks"
 import { logout } from "@/lib/slices/authSlice"
+import { FullPageLoading, LoadingSpinner } from "@/components/ui/loading-spinner"
 
 const SUPERMARKETS = [
   { id: "esselunga", name: "Esselunga", colors: ["#0b3a74", "#e10314"], logo: "/supermarkets/esselunga.png" },
@@ -172,11 +173,7 @@ export default function ProfilePage() {
   }
 
   if (profileLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-primary-purple border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
+    return <FullPageLoading message="Caricamento profilo..." />
   }
 
   if (profileError || !profile) {
@@ -269,7 +266,7 @@ export default function ProfilePage() {
                       className="flex-1 bg-gradient-to-r from-primary-purple to-primary-pink text-white"
                     >
                       {updateProfileLoading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        <LoadingSpinner size="sm" color="white" className="mr-2" />
                       ) : (
                         <Check className="w-4 h-4 mr-2" />
                       )}
@@ -344,7 +341,7 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               {editingSupermarkets ? (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto">
                     {SUPERMARKETS.map((supermarket) => (
                       <div
                         key={supermarket.id}
@@ -383,7 +380,7 @@ export default function ProfilePage() {
                       className="flex-1 bg-gradient-to-r from-primary-purple to-primary-pink text-white"
                     >
                       {updateSupermarketsLoading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        <LoadingSpinner size="sm" color="white" className="mr-2" />
                       ) : (
                         <Check className="w-4 h-4 mr-2" />
                       )}

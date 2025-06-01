@@ -19,6 +19,7 @@ import {
   useUnpinProductFromShoppingItemMutation,
 } from "@/lib/api/usersApi"
 import { useGetOffersForShoppingListQuery } from "@/lib/api/offersApi"
+import { FullPageLoading, LoadingSpinner } from "@/components/ui/loading-spinner"
 
 const SUPERMARKET_LOGOS: Record<string, string> = {
   todis: "/supermarkets/todis.png",
@@ -208,11 +209,7 @@ export default function ShoppingListPage() {
   }
 
   if (listLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-primary-purple border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
+    return <FullPageLoading message="Caricamento lista della spesa..." />
   }
 
   return (
@@ -267,7 +264,7 @@ export default function ShoppingListPage() {
                   >
                     {addLoading ? (
                       <div className="flex items-center space-x-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <LoadingSpinner size="sm" color="white" />
                         <span>Aggiungo...</span>
                       </div>
                     ) : (
@@ -359,7 +356,11 @@ export default function ShoppingListPage() {
                               className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-2"
                               disabled={!!removingItem}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              {removingItem === item._id ? (
+                                <LoadingSpinner size="sm" color="gray" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
                             </Button>
                           </div>
 

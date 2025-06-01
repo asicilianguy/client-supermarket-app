@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +18,7 @@ import {
 } from "@/lib/api/usersApi"
 import { useAppDispatch } from "@/lib/hooks"
 import { offersApi } from "@/lib/api/offersApi"
+import { LoadingState, LoadingSpinner, InlineLoading } from "@/components/ui/loading-spinner"
 
 const SUPERMARKET_LOGOS: Record<string, string> = {
   todis: "/supermarkets/todis.png",
@@ -36,7 +37,7 @@ const SUPERMARKET_LOGOS: Record<string, string> = {
   paghipoco: "/placeholder.svg?height=40&width=80&text=Paghi+Poco",
   prestofresco: "/placeholder.svg?height=40&width=80&text=Presto",
   conad: "/placeholder.svg?height=40&width=80&text=Conad",
-  auchan: "/supermarkets/auchan.png",
+  auchan: "/placeholder.svg?height=40&width=80&text=Auchan",
   penny: "/supermarkets/penny.png",
   despar: "/placeholder.svg?height=40&width=80&text=Despar",
 }
@@ -68,31 +69,50 @@ export default function ExplorePage() {
   const [selectedAisle, setSelectedAisle] = useState<string>("all")
   const [selectedBrand, setSelectedBrand] = useState<string>("all")
   const [addingProducts, setAddingProducts] = useState<Set<string>>(new Set())
+  const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
 
   const { data: userProfile } = useGetUserProfileQuery()
   const { data: aisles = [], isLoading: aislesLoading } = useGetAllAislesQuery()
   const { data: brands = [], isLoading: brandsLoading } = useGetAllBrandsQuery()
 
+  // ✅ Fix: Rimuovo il skip e gestisco meglio i parametri
+  const queryParams = useMemo(() => {
+    const params: any = {}
+
+    if (selectedSupermarket !== "all") {
+      params.chainName = selectedSupermarket
+    }
+    if (selectedAisle !== "all") {
+      params.supermarketAisle = selectedAisle
+    }
+    if (selectedBrand !== "all") {
+      params.brand = selectedBrand
+    }
+
+    return params
+  }, [selectedSupermarket, selectedAisle, selectedBrand])
+
   const {
     data: offers = [],
     isLoading: offersLoading,
     error: offersError,
-  } = useGetAllOffersQuery(
-    {
-      chainName: selectedSupermarket === "all" ? undefined : selectedSupermarket,
-      supermarketAisle: selectedAisle === "all" ? undefined : selectedAisle,
-      brand: selectedBrand === "all" ? undefined : selectedBrand,
-    },
-    {
-      skip: selectedSupermarket === "all" && selectedAisle === "all" && selectedBrand === "all",
-    },
-  )
+    isFetching: offersFetching,
+  } = useGetAllOffersQuery(queryParams, {
+    // ✅ Mostra sempre le offerte, anche senza filtri
+    skip: false,
+  })
 
   const [addToShoppingList] = useAddToShoppingListMutation()
   const [pinProductToShoppingItem] = usePinProductToShoppingItemMutation()
 
   const { toast } = useToast()
   const dispatch = useAppDispatch()
+
+  // ✅ Traccia quando vengono applicati i filtri
+  useEffect(() => {
+    const hasFilters = selectedSupermarket !== "all" || selectedAisle !== "all" || selectedBrand !== "all"
+    setHasAppliedFilters(hasFilters)
+  }, [selectedSupermarket, selectedAisle, selectedBrand])
 
   // Filter supermarkets to show only those the user has selected
   const filteredSupermarkets = useMemo(() => {
@@ -254,13 +274,18 @@ export default function ExplorePage() {
               </Select>
             </div>
           </div>
+
+          {/* ✅ Loading indicator per i filtri */}
+          {offersFetching && (
+            <div className="flex items-center justify-center py-2">
+              <InlineLoading message="Aggiornamento offerte..." />
+            </div>
+          )}
         </Card>
 
         {/* Results Section */}
-        {offersLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-10 h-10 border-4 border-primary-purple border-t-transparent rounded-full animate-spin" />
-          </div>
+        {offersLoading && !offersFetching ? (
+          <LoadingState message="Caricamento offerte..." />
         ) : offersError ? (
           <div className="text-center py-12">
             <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -271,23 +296,23 @@ export default function ExplorePage() {
           <>
             {offers.length > 0 ? (
               <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center flex-wrap gap-2">
                   <span>{offers.length} offerte trovate</span>
                   {selectedSupermarket !== "all" && (
-                    <Badge className="ml-2 bg-blue-100 text-blue-700 border-0">
+                    <Badge className="bg-blue-100 text-blue-700 border-0">
                       {filteredSupermarkets.find((m) => m.id === selectedSupermarket)?.name}
                     </Badge>
                   )}
                   {selectedAisle !== "all" && (
-                    <Badge className="ml-2 bg-green-100 text-green-700 border-0">{selectedAisle}</Badge>
+                    <Badge className="bg-green-100 text-green-700 border-0">{selectedAisle}</Badge>
                   )}
                   {selectedBrand !== "all" && (
-                    <Badge className="ml-2 bg-purple-100 text-purple-700 border-0">{selectedBrand}</Badge>
+                    <Badge className="bg-purple-100 text-purple-700 border-0">{selectedBrand}</Badge>
                   )}
                 </h2>
 
                 <div className="space-y-4">
-                  <AnimatePresence>
+                  <AnimatePresence mode="wait">
                     {offers.map((offer, index) => (
                       <motion.div
                         key={offer._id}
@@ -296,7 +321,7 @@ export default function ExplorePage() {
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
                       >
-                        <Card className="overflow-hidden">
+                        <Card className="overflow-hidden hover:shadow-md transition-shadow">
                           <CardContent className="p-0">
                             {/* Supermarket Header */}
                             <div className="h-10 relative p-2 flex items-center border-b border-gray-100">
@@ -317,11 +342,11 @@ export default function ExplorePage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleAddToShoppingList(offer)}
-                                className="ml-auto text-primary-purple"
+                                className="ml-auto text-primary-purple hover:bg-primary-purple/10"
                                 disabled={addingProducts.has(offer._id)}
                               >
                                 {addingProducts.has(offer._id) ? (
-                                  <div className="w-4 h-4 border-2 border-primary-purple border-t-transparent rounded-full animate-spin" />
+                                  <LoadingSpinner size="sm" />
                                 ) : (
                                   <>
                                     <Plus className="w-4 h-4 mr-1" />
@@ -382,7 +407,7 @@ export default function ExplorePage() {
               </div>
             ) : (
               <div className="text-center py-12">
-                {hasActiveFilters ? (
+                {hasAppliedFilters ? (
                   <>
                     <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Nessuna offerta trovata</h3>

@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useLoginMutation } from "@/lib/api/authApi"
 import { useAppDispatch } from "@/lib/hooks"
 import { setCredentials } from "@/lib/slices/authSlice"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -257,7 +258,7 @@ export default function LoginPage() {
               >
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <LoadingSpinner size="sm" color="white" />
                     <span>Accesso in corso...</span>
                   </div>
                 ) : (
