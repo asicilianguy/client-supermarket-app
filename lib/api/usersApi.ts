@@ -288,7 +288,7 @@ export const usersApi = createApi({
       },
     }),
 
-    // Product Pins endpoints
+    // Product Pins endpoints - ✅ Fix: Uso PUT per entrambe le operazioni
     pinProductToShoppingItem: builder.mutation<ShoppingListItem, { itemId: string; offerId: string }>({
       query: ({ itemId, offerId }) => ({
         url: `/shopping-list/${itemId}/pin/${offerId}`,
@@ -317,19 +317,22 @@ export const usersApi = createApi({
           })
         } catch (error: any) {
           patchResult.undo()
+          console.error("❌ Pin error:", error)
           toast({
             variant: "destructive",
             title: "Errore nella selezione",
-            description: error?.error?.data?.message || "Impossibile selezionare l'offerta",
+            description: "Impossibile selezionare l'offerta. Riprova.",
           })
         }
       },
     }),
 
+    // ✅ Fix: Uso PUT invece di DELETE per l'unpin
     unpinProductFromShoppingItem: builder.mutation<ShoppingListItem, { itemId: string; offerId: string }>({
       query: ({ itemId, offerId }) => ({
-        url: `/shopping-list/${itemId}/unpin/${offerId}`,
-        method: "DELETE",
+        url: `/shopping-list/${itemId}/pin/${offerId}`, // ✅ Stesso endpoint del pin
+        method: "PUT", // ✅ Uso PUT invece di DELETE
+        body: { action: "unpin" }, // ✅ Aggiungo un parametro per distinguere
       }),
       invalidatesTags: (result, error, { itemId }) => [
         { type: "ShoppingList", id: itemId },
@@ -354,10 +357,59 @@ export const usersApi = createApi({
           })
         } catch (error: any) {
           patchResult.undo()
+          console.error("❌ Unpin error:", error)
           toast({
             variant: "destructive",
             title: "Errore nella rimozione",
-            description: error?.error?.data?.message || "Impossibile rimuovere l'offerta",
+            description: "Impossibile rimuovere l'offerta. Riprova.",
+          })
+        }
+      },
+    }),
+
+    // ✅ Alternativa: Endpoint generico per gestire pin/unpin
+    toggleProductPin: builder.mutation<ShoppingListItem, { itemId: string; offerId: string; action: "pin" | "unpin" }>({
+      query: ({ itemId, offerId, action }) => ({
+        url: `/shopping-list/${itemId}/pin/${offerId}`,
+        method: "PUT",
+        body: { action },
+      }),
+      invalidatesTags: (result, error, { itemId }) => [
+        { type: "ShoppingList", id: itemId },
+        { type: "ShoppingList", id: "LIST" },
+      ],
+      async onQueryStarted({ itemId, offerId, action }, { dispatch, queryFulfilled }) {
+        // Optimistic update
+        const patchResult = dispatch(
+          usersApi.util.updateQueryData("getShoppingList", undefined, (draft) => {
+            const item = draft.find((item) => item._id === itemId)
+            if (item) {
+              if (action === "pin" && !item.productPins.includes(offerId)) {
+                item.productPins.push(offerId)
+              } else if (action === "unpin") {
+                item.productPins = item.productPins.filter((pin) => pin !== offerId)
+              }
+            }
+          }),
+        )
+
+        try {
+          await queryFulfilled
+          toast({
+            variant: "success",
+            title: action === "pin" ? "📌 Offerta selezionata!" : "📌 Offerta rimossa!",
+            description:
+              action === "pin"
+                ? "L'offerta è stata aggiunta ai tuoi preferiti"
+                : "L'offerta è stata rimossa dai preferiti",
+          })
+        } catch (error: any) {
+          patchResult.undo()
+          console.error(`❌ ${action} error:`, error)
+          toast({
+            variant: "destructive",
+            title: `Errore nella ${action === "pin" ? "selezione" : "rimozione"}`,
+            description: `Impossibile ${action === "pin" ? "selezionare" : "rimuovere"} l'offerta. Riprova.`,
           })
         }
       },
@@ -377,4 +429,5 @@ export const {
   useClearShoppingListMutation,
   usePinProductToShoppingItemMutation,
   useUnpinProductFromShoppingItemMutation,
+  useToggleProductPinMutation, // ✅ Nuovo hook per l'endpoint generico
 } = usersApi

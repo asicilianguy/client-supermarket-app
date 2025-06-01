@@ -15,8 +15,7 @@ import {
   useGetShoppingListQuery,
   useAddToShoppingListMutation,
   useRemoveFromShoppingListMutation,
-  usePinProductToShoppingItemMutation,
-  useUnpinProductFromShoppingItemMutation,
+  useToggleProductPinMutation, // ✅ Uso il nuovo hook
 } from "@/lib/api/usersApi"
 import { useGetOffersForShoppingListQuery } from "@/lib/api/offersApi"
 import { FullPageLoading, LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -49,13 +48,13 @@ export default function ShoppingListPage() {
 
   const [addToShoppingList, { isLoading: addLoading }] = useAddToShoppingListMutation()
   const [removeFromShoppingList] = useRemoveFromShoppingListMutation()
-  const [pinProductToShoppingItem] = usePinProductToShoppingItemMutation()
-  const [unpinProductFromShoppingItem] = useUnpinProductFromShoppingItemMutation()
+  const [toggleProductPin] = useToggleProductPinMutation() // ✅ Uso il nuovo hook
 
   const [newProduct, setNewProduct] = useState("")
   const [newNotes, setNewNotes] = useState("")
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const [removingItem, setRemovingItem] = useState<string | null>(null)
+  const [togglingPins, setTogglingPins] = useState<Set<string>>(new Set()) // ✅ Track pin operations
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const { toast } = useToast()
   const listRef = useRef<HTMLDivElement>(null)
@@ -100,23 +99,61 @@ export default function ShoppingListPage() {
     }
   }
 
+  // ✅ Nuova funzione con error handling migliorato
   const handleTogglePinOffer = async (itemId: string, offerId: string) => {
+    const pinKey = `${itemId}-${offerId}`
+
+    // Prevent multiple simultaneous operations on the same pin
+    if (togglingPins.has(pinKey)) return
+
+    setTogglingPins((prev) => new Set(prev).add(pinKey))
+
     try {
       const item = shoppingList.find((item) => item._id === itemId)
-      if (!item) return
+      if (!item) {
+        throw new Error("Prodotto non trovato nella lista")
+      }
 
       const isPinned = item.productPins.includes(offerId)
+      const action = isPinned ? "unpin" : "pin"
 
-      if (isPinned) {
-        // Toast handled by API hook
-        await unpinProductFromShoppingItem({ itemId, offerId }).unwrap()
-      } else {
-        // Toast handled by API hook
-        await pinProductToShoppingItem({ itemId, offerId }).unwrap()
-      }
+      console.log(`🔄 ${action}ning offer ${offerId} for item ${itemId}`)
+
+      // ✅ Uso il nuovo endpoint generico
+      await toggleProductPin({
+        itemId,
+        offerId,
+        action,
+      }).unwrap()
+
+      console.log(`✅ ${action} successful`)
     } catch (error: any) {
-      // Error toast handled by API hook
-      console.error("Error toggling pin:", error)
+      console.error("❌ Error toggling pin:", error)
+
+      // ✅ Error handling migliorato
+      let errorMessage = "Si è verificato un errore imprevisto"
+
+      if (error?.status === 404) {
+        errorMessage = "Endpoint non trovato. Funzionalità temporaneamente non disponibile."
+      } else if (error?.status === "PARSING_ERROR") {
+        errorMessage = "Errore di comunicazione con il server. Riprova più tardi."
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message
+      } else if (error?.error?.data?.message) {
+        errorMessage = error.error.data.message
+      }
+
+      toast({
+        variant: "destructive",
+        title: "Errore nell'operazione",
+        description: errorMessage,
+      })
+    } finally {
+      setTogglingPins((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(pinKey)
+        return newSet
+      })
     }
   }
 
@@ -150,6 +187,8 @@ export default function ShoppingListPage() {
   // Helper function to render offer cards
   const renderOfferCard = (offer: any, itemId: string, isPinned: boolean) => {
     const supermarketLogo = SUPERMARKET_LOGOS[offer.chainName] || "/placeholder.svg"
+    const pinKey = `${itemId}-${offer._id}`
+    const isToggling = togglingPins.has(pinKey)
 
     return (
       <Card key={offer._id} className={`border-0 overflow-hidden ${isPinned ? "shadow-md" : "shadow-sm"}`}>
@@ -172,8 +211,11 @@ export default function ShoppingListPage() {
               size="sm"
               onClick={() => handleTogglePinOffer(itemId, offer._id)}
               className="ml-auto p-1 h-8 w-8"
+              disabled={isToggling}
             >
-              {isPinned ? (
+              {isToggling ? (
+                <LoadingSpinner size="sm" />
+              ) : isPinned ? (
                 <PinOff className="w-4 h-4 text-primary-purple" />
               ) : (
                 <Pin className="w-4 h-4 text-gray-400" />
