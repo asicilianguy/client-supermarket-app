@@ -65,15 +65,29 @@ export default function LoginPage() {
     }
 
     try {
-      console.log("📞 Attempting login with:", {
-        phoneNumber: formData.phoneNumber, // Invio solo il numero senza +39
+      // Prova prima con +39, poi senza se fallisce
+      const phoneWithPrefix = `+39${formData.phoneNumber}`
+
+      console.log("📞 Attempting login with +39 prefix:", {
+        phoneNumber: phoneWithPrefix,
         password: "***hidden***",
       })
 
-      const result = await login({
-        phoneNumber: formData.phoneNumber, // Invio solo il numero senza +39
-        password: formData.password,
-      }).unwrap()
+      let result
+      try {
+        result = await login({
+          phoneNumber: phoneWithPrefix,
+          password: formData.password,
+        }).unwrap()
+      } catch (firstError: any) {
+        console.log("⚠️ Login with +39 failed, trying without prefix...")
+
+        // Se fallisce con +39, prova senza
+        result = await login({
+          phoneNumber: formData.phoneNumber,
+          password: formData.password,
+        }).unwrap()
+      }
 
       console.log("✅ Login successful:", result)
 
@@ -91,7 +105,14 @@ export default function LoginPage() {
 
       let errorMessage = "Credenziali non valide"
 
-      if (err?.data?.message) {
+      // Gestione errori più specifica
+      if (err?.status === 404) {
+        errorMessage = "Servizio temporaneamente non disponibile. Riprova più tardi."
+      } else if (err?.status === 401) {
+        errorMessage = "Numero di telefono o password non corretti"
+      } else if (err?.status === 500) {
+        errorMessage = "Errore del server. Riprova più tardi."
+      } else if (err?.data?.message) {
         errorMessage = err.data.message
       } else if (err?.data?.error) {
         errorMessage = err.data.error
@@ -161,6 +182,8 @@ export default function LoginPage() {
             </p>
             <p>Phone: {formData.phoneNumber}</p>
             <p>Loading: {isLoading ? "Yes" : "No"}</p>
+            <p>API Base URL: https://server-supermarket-app.onrender.com/api</p>
+            <p>Login Endpoint: /auth/login</p>
             {error && <p className="text-red-600">Error: {JSON.stringify(error)}</p>}
           </div>
         )}

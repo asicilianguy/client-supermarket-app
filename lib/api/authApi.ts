@@ -25,7 +25,7 @@ export interface AuthResponse {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://server-supermarket-app.onrender.com/api/auth",
+    baseUrl: "https://server-supermarket-app.onrender.com/api",
     prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json")
       return headers
@@ -37,7 +37,7 @@ export const authApi = createApi({
       query: (credentials) => {
         console.log("🔐 Login request:", credentials)
         return {
-          url: "/login",
+          url: "/auth/login", // Cambiato da "/login" a "/auth/login"
           method: "POST",
           body: credentials,
         }
@@ -56,7 +56,7 @@ export const authApi = createApi({
       query: (userData) => {
         console.log("📝 Register request:", userData)
         return {
-          url: "/register",
+          url: "/auth/register", // Cambiato da "/register" a "/auth/register"
           method: "POST",
           body: userData,
         }
@@ -73,28 +73,28 @@ export const authApi = createApi({
     }),
     verifyPhoneNumber: builder.mutation<{ msg: string }, { phoneNumber: string; verificationCode: string }>({
       query: (data) => ({
-        url: "/verify-phone",
+        url: "/auth/verify-phone",
         method: "POST",
         body: data,
       }),
     }),
     resendVerificationCode: builder.mutation<{ msg: string }, { phoneNumber: string }>({
       query: (data) => ({
-        url: "/resend-code",
+        url: "/auth/resend-code",
         method: "POST",
         body: data,
       }),
     }),
     requestPasswordReset: builder.mutation<{ msg: string }, { phoneNumber: string }>({
       query: (data) => ({
-        url: "/request-reset",
+        url: "/auth/request-reset",
         method: "POST",
         body: data,
       }),
     }),
     resetPassword: builder.mutation<{ msg: string }, { phoneNumber: string; resetCode: string; newPassword: string }>({
       query: (data) => ({
-        url: "/reset-password",
+        url: "/auth/reset-password",
         method: "POST",
         body: data,
       }),
